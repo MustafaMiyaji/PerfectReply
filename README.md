@@ -1,6 +1,7 @@
 # PerfectReply
 
-**Don't just reply. Connect.** 
+**PerfectReply - Don't just reply. Connect.**
+
 Your personal AI empathy engine & relationship coach.
 
 ## Overview
@@ -43,7 +44,7 @@ PerfectReply is an AI-powered application designed to help users navigate comple
 This project is optimized for deployment on Vercel.
 
 1.  Import the project to Vercel.
-2.  Add the `API_KEY` environment variable in the Vercel dashboard.
+2.  **Crucial**: Add the `API_KEY` environment variable in the Vercel Project Settings.
 3.  Deploy.
 
 ## License
