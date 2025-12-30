@@ -1,0 +1,5 @@
+{
+  "name": "PerfectReply",
+  "description": "An empathy engine powered by Gemini that helps you find the perfect words for any conversation.",
+  "requestFramePermissions": []
+}
