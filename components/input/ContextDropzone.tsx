@@ -331,10 +331,10 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                      values={files} 
                      onReorder={onReorder} 
                      className="flex flex-wrap gap-4 items-center justify-center w-full"
-                     onClick={(e) => e.stopPropagation()} // Prevent triggering file upload when clicking valid area
+                     onClick={(e: React.MouseEvent) => e.stopPropagation()} // Prevent triggering file upload when clicking valid area
                   >
                      <AnimatePresence>
-                        {files.map((fileObj, index) => {
+                        {files.map((fileObj) => {
                            const isVideo = fileObj.file.type.startsWith('video/');
                            const isAudio = fileObj.file.type.startsWith('audio/');
                            

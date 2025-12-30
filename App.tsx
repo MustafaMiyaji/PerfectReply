@@ -15,22 +15,18 @@ import {
   Scale,
   AlertCircle,
   RotateCcw,
-  MessageCircle,
   Github,
   Linkedin,
   X,
-  Trash2,
   Save,
   Clock,
   ChevronDown,
   Bell,
   Lightbulb,
-  FileText,
   Image as ImageIcon,
   Download,
   Moon,
   Sun,
-  Palette,
   Globe
 } from 'lucide-react';
 import { AmbientBackground } from './components/layout/AmbientBackground';
@@ -445,7 +441,7 @@ const App: React.FC = () => {
       if (!analysis || replies.length === 0) return;
       setIsGeneratingImage(true);
       try {
-          const base64 = await generateReactionImage(analysis, replies);
+          const base64 = await generateReactionImage(analysis);
           setGeneratedImage(base64);
       } catch (e) {
           showToast("Failed to generate image. Try again.", 'info');

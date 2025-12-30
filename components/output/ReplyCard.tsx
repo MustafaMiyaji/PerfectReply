@@ -11,7 +11,7 @@ interface ReplyCardProps {
   isFocused?: boolean;
 }
 
-const TypewriterText = ({ text, onComplete }: { text: string, onComplete?: () => void }) => {
+const TypewriterText = ({ text }: { text: string }) => {
   return (
       <motion.span
         initial={{ opacity: 0 }}

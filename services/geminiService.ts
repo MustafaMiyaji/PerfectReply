@@ -185,8 +185,7 @@ export const generateReplies = async (
  * Uses gemini-2.5-flash-image for generation.
  */
 export const generateReactionImage = async (
-    analysis: ChatAnalysis, 
-    replies: GeneratedReply[]
+    analysis: ChatAnalysis
 ): Promise<string> => {
     try {
         // Simplified prompt to avoid safety filters and ensure image output
@@ -279,7 +278,6 @@ export const askRelationshipCoach = async (
       // Strategy: Send files in the first turn of THIS request structure.
       
       const firstUserMsg = history.find(m => m.role === 'user');
-      const subsequent = history.filter(m => m !== firstUserMsg); // This is a bit loose, but logic below is safer:
       
       // We will actually rebuild the turns. 
       // Turn 1 (User): [Files, System Context, First User Query]
