@@ -277,8 +277,6 @@ export const askRelationshipCoach = async (
       // but for a robust specialized chat, we often need the files in the context.
       // Strategy: Send files in the first turn of THIS request structure.
       
-      const firstUserMsg = history.find(m => m.role === 'user');
-      
       // We will actually rebuild the turns. 
       // Turn 1 (User): [Files, System Context, First User Query]
       // Turn 1 (Model): [First Model Response]
