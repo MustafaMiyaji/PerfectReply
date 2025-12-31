@@ -7,7 +7,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 /**
  * Converts a File object to a Base64 string suitable for the Gemini API.
  */
-const fileToPart = (file: File): Promise<{ inlineData: { data: string; mimeType: string } }> => {
+export const fileToPart = (file: File): Promise<{ inlineData: { data: string; mimeType: string } }> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -233,10 +233,12 @@ export const askRelationshipCoach = async (
   textContext: string,
   language: string,
   history: { role: 'user' | 'model', text: string }[],
-  question: string
+  question: string,
+  currentTurnFiles: File[] = []
 ): Promise<string> => {
   try {
     const fileParts = await Promise.all(files.map(fileToPart));
+    const currentFilesParts = await Promise.all(currentTurnFiles.map(fileToPart));
 
     // Construct the full history for the API
     // We inject the files into the very first turn to provide context
@@ -251,7 +253,7 @@ export const askRelationshipCoach = async (
         CONTEXT PROVIDED:
         - Files: Screenshots/Recordings of the conversation.
         - Text Note: ${textContext || "None"}
-        - Language: ${language || "Detect from files"}
+        - Language: ${language || "Detect from files or user input"}
         
         INSTRUCTIONS:
         - Answer the user's questions about the partner's intent, meaning, or hidden subtext.
@@ -267,6 +269,7 @@ export const askRelationshipCoach = async (
         role: 'user',
         parts: [
           ...fileParts,
+          ...currentFilesParts,
           systemPart,
           { text: question }
         ]
@@ -277,20 +280,10 @@ export const askRelationshipCoach = async (
       // but for a robust specialized chat, we often need the files in the context.
       // Strategy: Send files in the first turn of THIS request structure.
       
-      // We will actually rebuild the turns. 
-      // Turn 1 (User): [Files, System Context, First User Query]
-      // Turn 1 (Model): [First Model Response]
-      // ...
-      // Turn N (User): [Current Question]
-      
-      // Since we don't have the files from previous 'history' text objects, we assume 
-      // we must re-inject them at the start of the conversation window for the model to "see" them again 
-      // in this stateless request (or use a stateful chat session, but here we use generateContent for simplicity with fileParts).
-      
       // Map existing history
       const historyParts = history.map((msg, index) => {
         if (index === 0 && msg.role === 'user') {
-             // Inject files into the FIRST user message recorded in history
+             // Inject global files into the FIRST user message recorded in history
              return {
                  role: 'user',
                  parts: [...fileParts, systemPart, { text: msg.text }]
@@ -304,10 +297,10 @@ export const askRelationshipCoach = async (
       
       contents.push(...historyParts);
       
-      // Add current question
+      // Add current question with new files if any
       contents.push({
         role: 'user',
-        parts: [{ text: question }]
+        parts: [...currentFilesParts, { text: question }]
       });
     }
 

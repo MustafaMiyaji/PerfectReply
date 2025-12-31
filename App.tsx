@@ -84,14 +84,14 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
       initial={{ opacity: 0, y: 50, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.9 }}
-      className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
+      className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-4 md:px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 backdrop-blur-md border w-[90%] md:w-auto justify-center ${
         type === 'success' 
           ? 'bg-emerald-50/90 dark:bg-emerald-900/90 border-emerald-200 dark:border-emerald-700 text-emerald-800 dark:text-emerald-100' 
           : 'bg-blue-50/90 dark:bg-blue-900/90 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-100'
       }`}
     >
-      {type === 'success' ? <CheckCircle2 size={18} className="text-emerald-500 dark:text-emerald-300" /> : <Bell size={18} className="text-blue-500 dark:text-blue-300" />}
-      <span className="font-medium text-sm">{message}</span>
+      {type === 'success' ? <CheckCircle2 size={18} className="text-emerald-500 dark:text-emerald-300 flex-shrink-0" /> : <Bell size={18} className="text-blue-500 dark:text-blue-300 flex-shrink-0" />}
+      <span className="font-medium text-sm truncate">{message}</span>
     </motion.div>
   );
 };
@@ -139,11 +139,11 @@ const LegalModal = ({ title, content, onClose }: { title: string, content: strin
       initial={{ scale: 0.9, opacity: 0, y: 20 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
       exit={{ scale: 0.9, opacity: 0, y: 20 }}
-      className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden border border-white/40 dark:border-white/10"
+      className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-white/40 dark:border-white/10"
       onClick={e => e.stopPropagation()}
     >
-      <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-        <h3 className="font-serif text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+      <div className="p-4 md:p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+        <h3 className="font-serif text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
           <Shield size={20} className="text-indigo-500" />
           {title}
         </h3>
@@ -151,7 +151,7 @@ const LegalModal = ({ title, content, onClose }: { title: string, content: strin
           <X size={18} />
         </button>
       </div>
-      <div className="p-6 overflow-y-auto custom-scrollbar">
+      <div className="p-4 md:p-6 overflow-y-auto custom-scrollbar">
         <div className="prose prose-sm prose-indigo dark:prose-invert text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">
            {content.split('\n').map((line, i) => (
              <p key={i} className={line.startsWith('**') ? 'font-bold text-gray-800 dark:text-gray-100 mt-4 mb-2' : 'mb-2'}>
@@ -161,7 +161,7 @@ const LegalModal = ({ title, content, onClose }: { title: string, content: strin
         </div>
       </div>
       <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-end">
-        <button onClick={onClose} className="px-6 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+        <button onClick={onClose} className="px-6 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors w-full md:w-auto">
           Close
         </button>
       </div>
@@ -180,7 +180,7 @@ const OnboardingModal = ({ onClose }: { onClose: () => void }) => (
       <motion.div 
          initial={{ scale: 0.8, opacity: 0 }}
          animate={{ scale: 1, opacity: 1 }}
-         className="bg-white dark:bg-gray-800 rounded-[2rem] p-8 max-w-md w-full shadow-2xl text-center relative overflow-hidden"
+         className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 md:p-8 max-w-md w-full shadow-2xl text-center relative overflow-hidden"
       >
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-heartbeat-red to-purple-500"></div>
           <div className="w-16 h-16 bg-gradient-to-tr from-pink-100 to-indigo-100 dark:from-pink-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
@@ -188,21 +188,21 @@ const OnboardingModal = ({ onClose }: { onClose: () => void }) => (
           </div>
           
           <h2 className="font-serif text-2xl font-bold mb-3 text-gray-900 dark:text-white">Welcome to PerfectReply</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+          <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed text-sm md:text-base">
             Your personal AI relationship coach. Upload your chat history, select a vibe, and get the perfect response instantly.
           </p>
           
           <div className="space-y-4 text-left mb-8 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">1</div>
+                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
                 <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">Upload Context (Audio/Images/Text)</span>
              </div>
              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">2</div>
+                <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
                 <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">Select your desired Vibe</span>
              </div>
              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-xs font-bold">3</div>
+                <div className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
                 <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">Generate & Edit Replies</span>
              </div>
           </div>
@@ -215,6 +215,16 @@ const OnboardingModal = ({ onClose }: { onClose: () => void }) => (
 )
 
 const App: React.FC = () => {
+  // Theme Toggle State - Initialize from localStorage
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('theme');
+        // Check local storage or system preference
+        return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    return false;
+  });
+
   // State
   const [step, setStep] = useState<'upload' | 'analyzing' | 'config' | 'generating' | 'results'>('upload');
   const [files, setFiles] = useState<FileWithId[]>([]);
@@ -238,7 +248,6 @@ const App: React.FC = () => {
   const [activeModal, setActiveModal] = useState<'privacy' | 'terms' | null>(null);
   const [triggerConfetti, setTriggerConfetti] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [focusedReplyIndex, setFocusedReplyIndex] = useState<number>(-1);
 
   // Rotating loading messages
@@ -257,12 +266,15 @@ const App: React.FC = () => {
     "Fact: 65% of communication is non-verbal. Context files help us see that."
   ];
 
-  // Theme Toggle Effect
+  // Theme Toggle Effect - Runs on mount and when theme changes
   useEffect(() => {
+    const root = document.documentElement;
     if (isDarkMode) {
-        document.documentElement.classList.add('dark');
+        root.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
     } else {
-        document.documentElement.classList.remove('dark');
+        root.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
 
@@ -341,7 +353,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [step, activeModal, showOnboarding, replies, focusedReplyIndex]);
 
-  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+  const toggleTheme = () => setIsDarkMode(prev => !prev);
 
   const showToast = (message: string, type: 'success' | 'info' = 'success') => {
     setToast({ message, type });
@@ -518,22 +530,22 @@ const App: React.FC = () => {
       <ContextChat files={files} textContext={textContext} language={language} />
 
       {/* Header */}
-      <header className="fixed top-0 left-0 w-full px-6 py-4 z-50 flex justify-between items-center bg-white/10 dark:bg-black/20 backdrop-blur-md border-b border-white/20 dark:border-white/5 shadow-sm transition-all">
-        <div className="flex items-center gap-3 cursor-pointer group" onClick={reset}>
-          <div className="w-10 h-10 rounded-full bg-white/60 dark:bg-gray-800/60 backdrop-blur-md flex items-center justify-center border border-white/50 dark:border-gray-700 shadow-sm transition-transform group-hover:scale-105 group-hover:rotate-12">
-            <Heart size={18} className="text-heartbeat-red fill-heartbeat-red" />
+      <header className="fixed top-0 left-0 w-full px-4 py-3 md:px-6 md:py-4 z-50 flex justify-between items-center bg-white/10 dark:bg-black/20 backdrop-blur-md border-b border-white/20 dark:border-white/5 shadow-sm transition-all">
+        <div className="flex items-center gap-2 md:gap-3 cursor-pointer group" onClick={reset}>
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/60 dark:bg-gray-800/60 backdrop-blur-md flex items-center justify-center border border-white/50 dark:border-gray-700 shadow-sm transition-transform group-hover:scale-105 group-hover:rotate-12">
+            <Heart size={16} className="text-heartbeat-red fill-heartbeat-red md:w-[18px] md:h-[18px]" />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-serif font-bold text-xl tracking-tight text-gray-800 dark:text-gray-100">PerfectReply</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest bg-white/50 dark:bg-gray-700/50 border border-white/60 dark:border-gray-600 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm">Beta</span>
+          <div className="flex items-center gap-1 md:gap-2">
+            <span className="font-serif font-bold text-lg md:text-xl tracking-tight text-gray-800 dark:text-gray-100">PerfectReply</span>
+            <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-white/50 dark:bg-gray-700/50 border border-white/60 dark:border-gray-600 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full backdrop-blur-sm shadow-sm">Beta</span>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
             {/* Theme Toggle */}
             <button 
                 onClick={toggleTheme}
-                className="p-2.5 rounded-full bg-white/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-all border border-white/40 dark:border-gray-600 shadow-sm hover:shadow-md"
+                className="p-2 md:p-2.5 rounded-full bg-white/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-all border border-white/40 dark:border-gray-600 shadow-sm hover:shadow-md"
                 title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
                 <AnimatePresence mode="wait" initial={false}>
@@ -552,7 +564,7 @@ const App: React.FC = () => {
             {step !== 'upload' && (
               <button 
                 onClick={reset}
-                className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm border border-white/40 dark:border-gray-600 transition-all shadow-sm hover:shadow-md active:scale-95 group"
+                className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 md:px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm border border-white/40 dark:border-gray-600 transition-all shadow-sm hover:shadow-md active:scale-95 group"
               >
                 <RotateCcw size={14} className="group-hover:-rotate-180 transition-transform duration-500" />
                 <span className="hidden sm:inline">Start Over</span>
@@ -562,7 +574,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex flex-col items-center justify-center flex-grow p-4 md:p-8 pt-32 pb-20">
+      <main className="relative z-10 flex flex-col items-center justify-center flex-grow p-4 md:p-8 pt-24 md:pt-32 pb-20 w-full max-w-7xl mx-auto">
         <AnimatePresence mode="wait">
           
           {/* STEP 1: UPLOAD */}
@@ -575,11 +587,11 @@ const App: React.FC = () => {
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="w-full max-w-3xl"
             >
-              <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden border border-white/60 dark:border-white/10">
+              <div className="glass-panel rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden border border-white/60 dark:border-white/10">
                  {/* Animated Gradient Border Overlay */}
-                 <div className="absolute inset-0 border-2 border-transparent rounded-[2.5rem] bg-gradient-to-r from-pink-200/30 via-purple-200/30 to-blue-200/30 dark:from-pink-900/10 dark:to-blue-900/10 pointer-events-none"></div>
+                 <div className="absolute inset-0 border-2 border-transparent rounded-[2rem] md:rounded-[2.5rem] bg-gradient-to-r from-pink-200/30 via-purple-200/30 to-blue-200/30 dark:from-pink-900/10 dark:to-blue-900/10 pointer-events-none"></div>
 
-                <div className="text-center mb-10">
+                <div className="text-center mb-8 md:mb-10">
                   <motion.div 
                     initial={{ scale: 0.9, opacity: 0 }} 
                     animate={{ scale: 1, opacity: 1 }}
@@ -588,11 +600,11 @@ const App: React.FC = () => {
                   >
                     ✨ AI-Powered Relationship Advice
                   </motion.div>
-                  <h1 className="font-serif text-5xl md:text-6xl mb-6 text-gray-900 dark:text-white leading-tight tracking-tight relative z-10">
+                  <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl mb-4 md:mb-6 text-gray-900 dark:text-white leading-tight tracking-tight relative z-10">
                     Don't just reply. <br/> 
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-heartbeat-red via-purple-500 to-indigo-500 animate-gradient-x bg-[length:200%_auto] inline-block mt-2">Connect.</span>
                   </h1>
-                  <p className="text-gray-600 dark:text-gray-300 text-lg md:text-xl max-w-lg mx-auto leading-relaxed font-light">
+                  <p className="text-gray-600 dark:text-gray-300 text-base md:text-xl max-w-lg mx-auto leading-relaxed font-light">
                     Upload screenshots, call recordings, or text. We'll decode the vibe and craft the perfect response.
                   </p>
                 </div>
@@ -627,10 +639,10 @@ const App: React.FC = () => {
                     onClick={startAnalysis}
                     disabled={files.length === 0 && !textContext.trim()}
                     className="
-                      bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-10 py-4 rounded-full font-medium text-lg
+                      bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-8 md:px-10 py-3 md:py-4 rounded-full font-medium text-lg
                       hover:bg-gray-800 dark:hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed 
                       flex items-center gap-3 shadow-xl shadow-gray-200 dark:shadow-black/20 hover:shadow-2xl hover:shadow-gray-300 dark:hover:shadow-black/40 hover:-translate-y-1
-                      active:scale-95 group relative overflow-hidden ring-4 ring-transparent hover:ring-gray-100 dark:hover:ring-gray-800
+                      active:scale-95 group relative overflow-hidden ring-4 ring-transparent hover:ring-gray-100 dark:hover:ring-gray-800 w-full md:w-auto justify-center
                     "
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 pointer-events-none"></div>
@@ -643,6 +655,7 @@ const App: React.FC = () => {
             </motion.div>
           )}
 
+          {/* ... (rest of the file remains largely the same, just keeping structure) ... */}
           {/* STEP 2: ANALYZING / GENERATING LOADING SCREEN */}
           {(step === 'analyzing' || step === 'generating') && (
             <motion.div 
@@ -650,23 +663,20 @@ const App: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.1 }}
-              className="text-center max-w-lg w-full"
+              className="text-center max-w-lg w-full px-4"
             >
-              <div className="relative w-48 h-48 mx-auto mb-10 flex items-center justify-center">
-                {/* Orbital Rings */}
+              {/* ... Loading UI ... */}
+              <div className="relative w-32 h-32 md:w-48 md:h-48 mx-auto mb-8 md:mb-10 flex items-center justify-center">
                 <div className="absolute w-full h-full border-2 border-heartbeat-red/10 dark:border-heartbeat-red/20 rounded-full animate-[spin_8s_linear_infinite]"></div>
                 <div className="absolute w-[80%] h-[80%] border-2 border-purple-500/10 dark:border-purple-500/20 rounded-full animate-[spin_6s_linear_infinite_reverse]"></div>
-                
-                {/* Ripples */}
                 <div className="absolute inset-0 bg-heartbeat-red/5 dark:bg-heartbeat-red/10 rounded-full animate-ping opacity-75 duration-2000"></div>
                 <div className="absolute inset-8 bg-purple-500/5 dark:bg-purple-500/10 rounded-full animate-ping opacity-75 delay-300 duration-2000"></div>
-                
-                <div className="relative w-24 h-24 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-full border border-white/80 dark:border-white/20 flex items-center justify-center shadow-2xl z-10">
-                   <Sparkles className="text-heartbeat-red animate-pulse drop-shadow-md" size={40} />
+                <div className="relative w-16 h-16 md:w-24 md:h-24 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-full border border-white/80 dark:border-white/20 flex items-center justify-center shadow-2xl z-10">
+                   <Sparkles className="text-heartbeat-red animate-pulse drop-shadow-md w-8 h-8 md:w-10 md:h-10" />
                 </div>
               </div>
               
-              <h2 className="font-serif text-4xl mb-4 text-gray-900 dark:text-white">
+              <h2 className="font-serif text-3xl md:text-4xl mb-4 text-gray-900 dark:text-white">
                 {step === 'analyzing' ? 'Reading the room...' : 'Drafting replies...'}
               </h2>
               
@@ -677,14 +687,13 @@ const App: React.FC = () => {
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -20, opacity: 0 }}
-                    className="text-gray-500 dark:text-gray-400 font-medium text-lg"
+                    className="text-gray-500 dark:text-gray-400 font-medium text-base md:text-lg"
                   >
                     {loadingMessages[loadingTextIndex]}
                   </motion.p>
                 </AnimatePresence>
               </div>
 
-              {/* Tips Carousel */}
                <motion.div 
                  initial={{ opacity: 0 }} 
                  animate={{ opacity: 1 }} 
@@ -719,19 +728,19 @@ const App: React.FC = () => {
               exit={{ opacity: 0, y: -20 }}
               className="w-full max-w-3xl"
             >
-              {/* Insight Banner */}
+               {/* ... Configuration UI ... */}
               <motion.div 
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="mb-8 bg-gradient-to-r from-indigo-50/90 to-purple-50/90 dark:from-indigo-900/50 dark:to-purple-900/50 backdrop-blur-md border border-indigo-100 dark:border-indigo-800 p-6 rounded-[1.5rem] flex items-start gap-5 shadow-lg shadow-indigo-100/50 dark:shadow-black/30"
+                className="mb-8 bg-gradient-to-r from-indigo-50/90 to-purple-50/90 dark:from-indigo-900/50 dark:to-purple-900/50 backdrop-blur-md border border-indigo-100 dark:border-indigo-800 p-4 md:p-6 rounded-[1.5rem] flex flex-col md:flex-row items-start gap-5 shadow-lg shadow-indigo-100/50 dark:shadow-black/30"
               >
                 <div className="p-3 bg-white dark:bg-gray-800 rounded-full text-indigo-600 dark:text-indigo-400 mt-1 shadow-sm shrink-0">
                   <Sparkles size={20} />
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg mb-1">AI Insight</h3>
-                  <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed mb-3">{analysis.summary}</p>
+                  <p className="text-sm md:text-base text-gray-700 dark:text-gray-300 leading-relaxed mb-3">{analysis.summary}</p>
                   <div className="flex gap-2 flex-wrap">
                     {analysis.tags.map(tag => (
                       <span key={tag} className="text-xs font-semibold px-2.5 py-1 bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-300 rounded-md border border-indigo-50 dark:border-indigo-700 shadow-sm">
@@ -742,18 +751,17 @@ const App: React.FC = () => {
                 </div>
               </motion.div>
 
-              <div className="glass-panel rounded-[2rem] p-8 md:p-10 shadow-2xl border border-white/60 dark:border-white/10 relative">
+              <div className="glass-panel rounded-[2rem] p-6 md:p-10 shadow-2xl border border-white/60 dark:border-white/10 relative">
                 
-                {/* Save Draft Button */}
                 <button 
                   onClick={saveDraft}
-                  className="absolute top-8 right-8 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 text-sm font-medium transition-colors bg-white/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-full border border-gray-100 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:shadow-sm"
+                  className="absolute top-6 right-6 md:top-8 md:right-8 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 text-sm font-medium transition-colors bg-white/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-full border border-gray-100 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:shadow-sm"
                 >
-                  <Save size={16} /> Save Draft
+                  <Save size={16} /> <span className="hidden sm:inline">Save Draft</span>
                 </button>
 
                 <div className="mb-8">
-                  <h2 className="font-serif text-3xl mb-2 text-gray-900 dark:text-white">Set the tone</h2>
+                  <h2 className="font-serif text-2xl md:text-3xl mb-2 text-gray-900 dark:text-white">Set the tone</h2>
                   <p className="text-gray-500 dark:text-gray-400">How do you want to come across?</p>
                 </div>
                 
@@ -765,8 +773,7 @@ const App: React.FC = () => {
                   setCustomVibe={setCustomVibe}
                 />
 
-                {/* Intensity Slider */}
-                <div className="mb-10 bg-gradient-to-b from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-800/20 p-6 rounded-2xl border border-white/50 dark:border-white/10 shadow-inner relative overflow-hidden">
+                <div className="mb-10 bg-gradient-to-b from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-800/20 p-4 md:p-6 rounded-2xl border border-white/50 dark:border-white/10 shadow-inner relative overflow-hidden">
                   <div className="absolute inset-0 bg-white/20 dark:bg-black/20 backdrop-blur-sm z-0"></div>
                   <div className="relative z-10">
                     <div className="flex justify-between items-center mb-6">
@@ -787,12 +794,10 @@ const App: React.FC = () => {
                     </div>
                     
                     <div className="relative h-12 flex items-center group px-2">
-                      {/* Visual Gradient Track */}
                       <div className="absolute w-[calc(100%-16px)] h-3 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 shadow-inner left-2">
                         <div className="w-full h-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-rose-500 opacity-80 group-hover:opacity-100 transition-opacity"></div>
                       </div>
                       
-                      {/* Ticks */}
                       <div className="absolute w-[calc(100%-16px)] h-full pointer-events-none flex justify-between px-1 left-2">
                         {[0, 25, 50, 75, 100].map(tick => (
                           <div key={tick} className="w-0.5 h-1.5 bg-white/50 dark:bg-white/20 mt-[21px]"></div>
@@ -852,20 +857,20 @@ const App: React.FC = () => {
               animate={{ opacity: 1 }}
               className="w-full max-w-5xl"
             >
+               {/* ... Results UI ... */}
               <div className="flex flex-col md:flex-row justify-between items-center mb-8 px-2 gap-4">
                 <button 
                   onClick={() => setStep('config')}
-                  className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 font-medium flex items-center gap-2 transition-colors px-4 py-2 hover:bg-white/40 dark:hover:bg-gray-800/40 rounded-full"
+                  className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 font-medium flex items-center gap-2 transition-colors px-4 py-2 hover:bg-white/40 dark:hover:bg-gray-800/40 rounded-full w-full md:w-auto justify-center"
                 >
                   &larr; Adjust Settings
                 </button>
                 
-                <div className="flex items-center gap-3">
-                    {/* Reminder Button */}
-                    <div className="relative">
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    <div className="relative w-full sm:w-auto">
                         <button 
                             onClick={() => setShowReminderMenu(!showReminderMenu)}
-                            className="text-gray-600 dark:text-gray-300 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2.5 rounded-full text-sm font-medium flex items-center gap-2 shadow-sm transition-all"
+                            className="text-gray-600 dark:text-gray-300 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2.5 rounded-full text-sm font-medium flex items-center justify-center gap-2 shadow-sm transition-all w-full"
                         >
                             <Clock size={16} /> Remind Me
                         </button>
@@ -875,7 +880,7 @@ const App: React.FC = () => {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 10 }}
-                                    className="absolute top-full mt-2 right-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20"
+                                    className="absolute top-full mt-2 right-0 w-full sm:w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20"
                                 >
                                     <button onClick={() => handleRemindMe('1 hour')} className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-200">In 1 hour</button>
                                     <button onClick={() => handleRemindMe('3 hours')} className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-200 border-t border-gray-50 dark:border-gray-700">In 3 hours</button>
@@ -885,11 +890,10 @@ const App: React.FC = () => {
                         </AnimatePresence>
                     </div>
 
-                    {/* Regenerate Button Dropdown */}
-                    <div className="relative">
+                    <div className="relative w-full sm:w-auto">
                         <button 
                             onClick={() => setShowRegenerateMenu(!showRegenerateMenu)}
-                            className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100 px-5 py-2.5 rounded-full text-sm font-semibold border border-gray-200 dark:border-gray-700 flex items-center gap-2 transition-all shadow-sm hover:shadow-md active:scale-95 min-w-[160px] justify-between"
+                            className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100 px-5 py-2.5 rounded-full text-sm font-semibold border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow-md active:scale-95 w-full sm:min-w-[160px] sm:justify-between"
                         >
                             <span className="flex items-center gap-2"><RefreshCw size={16} /> Regenerate</span>
                             <ChevronDown size={14} className={`transition-transform ${showRegenerateMenu ? 'rotate-180' : ''}`} />
@@ -901,7 +905,7 @@ const App: React.FC = () => {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 10 }}
-                                    className="absolute top-full mt-2 right-0 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20"
+                                    className="absolute top-full mt-2 right-0 w-full sm:w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20"
                                 >
                                     <div className="p-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 text-xs font-bold text-gray-400 uppercase tracking-wider">Options</div>
                                     <button onClick={() => generate(false)} className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-200 flex items-center justify-between group">
@@ -919,7 +923,6 @@ const App: React.FC = () => {
                 </div>
               </div>
               
-              {/* Image Generation Section */}
               <div className="mb-10 w-full flex flex-col md:flex-row gap-6 items-stretch">
                  <div className="bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-[2rem] p-6 border border-white/60 dark:border-white/10 shadow-lg backdrop-blur-sm flex flex-col justify-center items-center flex-grow relative overflow-hidden">
                      {!generatedImage ? (
@@ -955,13 +958,12 @@ const App: React.FC = () => {
                          </div>
                      )}
                      
-                     {/* Decorative background blobs */}
                      <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/20 rounded-full blur-2xl -mr-10 -mt-10"></div>
                      <div className="absolute bottom-0 left-0 w-24 h-24 bg-pink-200/20 rounded-full blur-2xl -ml-5 -mb-5"></div>
                  </div>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6 auto-rows-fr">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
                 {replies.map((reply, idx) => (
                    <ReplyCard 
                      key={idx} 
@@ -986,19 +988,19 @@ const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-12 text-center text-gray-400 dark:text-gray-500 text-sm relative z-10 border-t border-gray-200/50 dark:border-gray-800/50 bg-white/30 dark:bg-black/30 backdrop-blur-sm mt-auto">
+      <footer className="w-full py-8 md:py-12 text-center text-gray-400 dark:text-gray-500 text-sm relative z-10 border-t border-gray-200/50 dark:border-gray-800/50 bg-white/30 dark:bg-black/30 backdrop-blur-sm mt-auto">
         <div className="flex flex-col items-center gap-6">
-            <div className="flex items-center gap-8">
+            <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 px-4">
                <button onClick={() => setActiveModal('privacy')} className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Privacy Policy</button>
                <button onClick={() => setActiveModal('terms')} className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Terms of Service</button>
-               <div className="h-4 w-px bg-gray-300 dark:bg-gray-700"></div>
+               <div className="hidden md:block h-4 w-px bg-gray-300 dark:bg-gray-700"></div>
                <a href="https://github.com/MustafaMiyaji" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors flex items-center gap-2 group"><Github size={16} className="group-hover:scale-110 transition-transform" /> GitHub</a>
                <a href="https://www.linkedin.com/in/mustafa-alimiyaji-195742327/" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors flex items-center gap-2 group"><Linkedin size={16} className="group-hover:scale-110 transition-transform text-blue-600 dark:text-blue-400" /> LinkedIn</a>
             </div>
             
-            <div className="text-center">
+            <div className="text-center px-4">
                 <p className="font-semibold text-gray-600 dark:text-gray-400 tracking-wide text-xs uppercase mb-2">Powered by Gemini 3.0</p>
-                <p className="text-gray-500 dark:text-gray-500 text-sm flex items-center justify-center gap-1.5">
+                <p className="text-gray-500 dark:text-gray-500 text-sm flex items-center justify-center gap-1.5 flex-wrap">
                    Made with <Heart size={14} className="text-red-500 fill-red-500 animate-pulse" /> by <span className="font-medium text-gray-700 dark:text-gray-300">Mustafa Miyaji</span>
                 </p>
             </div>

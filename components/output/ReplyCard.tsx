@@ -101,7 +101,7 @@ export const ReplyCard: React.FC<ReplyCardProps> = ({ reply, index, onRegenerate
           boxShadow: isFocused ? '0 0 0 2px rgba(99, 102, 241, 0.5), 0 20px 40px -10px rgba(0,0,0,0.2)' : '0 8px 32px 0 rgba(31, 38, 135, 0.07)'
       }}
       transition={{ delay: index * 0.2, type: "spring", stiffness: 100, damping: 15 }}
-      className={`glass-panel rounded-[2rem] p-8 flex flex-col h-full hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 hover:-translate-y-2 relative overflow-visible group border border-white/60 dark:border-white/10 ${isFocused ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 z-10' : ''}`}
+      className={`glass-panel rounded-[2rem] p-6 md:p-8 flex flex-col h-full hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 hover:-translate-y-2 relative overflow-visible group border border-white/60 dark:border-white/10 ${isFocused ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 z-10' : ''}`}
     >
       {/* Noise Texture Overlay */}
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
@@ -155,8 +155,8 @@ export const ReplyCard: React.FC<ReplyCardProps> = ({ reply, index, onRegenerate
                 className="w-full bg-transparent border-none p-0 resize-none focus:ring-0 text-[1.25rem] font-serif text-gray-800 dark:text-gray-100 leading-[1.6] font-medium"
             />
         ) : (
-            <p className="font-serif text-[1.25rem] text-gray-800 dark:text-gray-100 leading-[1.6] select-all cursor-text selection:bg-heartbeat-red/20 dark:selection:bg-heartbeat-red/40 font-medium">
-                "<TypewriterText text={currentText} />"
+            <p className="font-serif text-lg md:text-[1.25rem] text-gray-800 dark:text-gray-100 leading-[1.6] select-all cursor-text selection:bg-heartbeat-red/20 dark:selection:bg-heartbeat-red/40 font-medium">
+                <TypewriterText text={currentText} />
             </p>
         )}
       </div>

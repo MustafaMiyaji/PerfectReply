@@ -179,19 +179,19 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-2xl w-full max-w-md p-8 relative overflow-hidden border border-white/20 dark:border-white/10"
+                className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-2xl w-full max-w-md p-6 md:p-8 relative overflow-hidden border border-white/20 dark:border-white/10 max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Close Button */}
                 <button 
                     onClick={onClose} 
-                    className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full p-2 transition-colors"
+                    className="absolute top-4 right-4 md:top-6 md:right-6 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full p-2 transition-colors"
                 >
                     <X size={20} />
                 </button>
 
                 <div className="mb-6">
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                         <div className="flex items-center gap-4">
                             <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm ring-4 ring-indigo-50/50 dark:ring-indigo-900/20">
                                 {ICON_MAP[selectedIcon] || <Palette size={28} />}
@@ -203,10 +203,10 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
                         </div>
                         
                         {/* Preset Dropdown */}
-                        <div className="relative">
+                        <div className="relative w-full sm:w-auto">
                             <button 
                                 onClick={() => setShowPresets(!showPresets)}
-                                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                className="w-full sm:w-auto text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-3 py-2 rounded-lg transition-colors flex items-center justify-center sm:justify-start gap-1 border border-indigo-100 dark:border-indigo-900 sm:border-0"
                             >
                                 {showPresets ? "Hide Presets" : "Load Preset"} <ChevronDown size={12} className={showPresets ? "rotate-180" : ""} />
                             </button>
@@ -216,7 +216,7 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
                                         initial={{ opacity: 0, y: 5 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: 5 }}
-                                        className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden"
+                                        className="absolute top-full right-0 mt-2 w-full sm:w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden"
                                     >
                                         {savedPresets.length === 0 ? (
                                             <div className="p-3 text-xs text-gray-400 text-center">No saved presets yet.</div>
@@ -267,9 +267,9 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
                     
                     <div>
                          <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 ml-1">Icon & Color</label>
-                         <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-900 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                         <div className="flex flex-col sm:flex-row items-center justify-between bg-gray-50 dark:bg-gray-900 p-3 rounded-xl border border-gray-100 dark:border-gray-700 gap-3">
                              {/* Icon Picker */}
-                             <div className="grid grid-cols-5 gap-2">
+                             <div className="grid grid-cols-5 gap-2 w-full sm:w-auto justify-items-center">
                                  {Object.entries(ICON_MAP).slice(0, 5).map(([name, icon]) => (
                                      <button
                                          key={name}
@@ -281,10 +281,11 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
                                  ))}
                              </div>
 
-                             <div className="w-px h-8 bg-gray-200 dark:bg-gray-700 mx-2"></div>
+                             <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-gray-700 mx-2"></div>
+                             <div className="sm:hidden w-full h-px bg-gray-200 dark:bg-gray-700 my-1"></div>
 
                              {/* Color Picker */}
-                             <div className="flex items-center gap-2">
+                             <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
                                 {colors.slice(0, 3).map((c) => (
                                     <button 
                                         key={c.hex}

@@ -238,7 +238,7 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
     <>
       <div className="flex flex-col gap-6">
         {/* Input Toggle Tabs */}
-        <div className="flex justify-center mb-2">
+        <div className="flex justify-center mb-2 scale-90 md:scale-100 origin-center">
             <div className="bg-white/40 dark:bg-gray-800/40 backdrop-blur-md p-1.5 rounded-full flex relative shadow-sm border border-white/40 dark:border-gray-700">
                 <motion.div 
                     className="absolute top-1.5 bottom-1.5 bg-white dark:bg-gray-700 rounded-full shadow-md z-0"
@@ -252,13 +252,13 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                 />
                 <button 
                     onClick={() => setActiveTab('upload')}
-                    className={`relative z-10 px-8 py-2.5 rounded-full text-sm font-semibold transition-colors duration-300 ${activeTab === 'upload' ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                    className={`relative z-10 px-6 md:px-8 py-2 md:py-2.5 rounded-full text-sm font-semibold transition-colors duration-300 ${activeTab === 'upload' ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                 >
                     <span className="flex items-center gap-2"><UploadCloud size={16} /> Media</span>
                 </button>
                 <button 
                     onClick={() => setActiveTab('text')}
-                    className={`relative z-10 px-8 py-2.5 rounded-full text-sm font-semibold transition-colors duration-300 ${activeTab === 'text' ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                    className={`relative z-10 px-6 md:px-8 py-2 md:py-2.5 rounded-full text-sm font-semibold transition-colors duration-300 ${activeTab === 'text' ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                 >
                      <span className="flex items-center gap-2"><Type size={16} /> Text</span>
                 </button>
@@ -269,7 +269,7 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
         <div className={`${activeTab === 'upload' ? 'block' : 'hidden'}`}>
             <div 
               className={`
-                relative border-2 border-dashed rounded-[2.5rem] p-8 transition-all duration-300 cursor-pointer overflow-hidden
+                relative border-2 border-dashed rounded-[2.5rem] p-4 md:p-8 transition-all duration-300 cursor-pointer overflow-hidden
                 flex flex-col items-center justify-center group/dropzone
                 ${isDragging 
                   ? 'border-heartbeat-red bg-heartbeat-red/5 scale-[1.01] shadow-xl shadow-heartbeat-red/10' 
@@ -280,7 +280,7 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              style={{ minHeight: '350px' }}
+              style={{ minHeight: '250px' }} // Adjusted for mobile
             >
               <input 
                 type="file" 
@@ -295,9 +295,9 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col items-center justify-center h-full gap-6 text-center p-6"
+                  className="flex flex-col items-center justify-center h-full gap-4 md:gap-6 text-center p-4 md:p-6"
                 >
-                  <div className="relative group/icon">
+                  <div className="relative group/icon scale-75 md:scale-100">
                     <div className="absolute inset-0 bg-heartbeat-red/20 rounded-[2rem] animate-pulse-slow opacity-0 group-hover/icon:opacity-100 transition-opacity"></div>
                     <div className={`
                       w-24 h-24 rounded-[2rem] bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 shadow-[0_8px_30px_rgb(0,0,0,0.06)] flex items-center justify-center transition-all duration-500 ease-out relative z-10 border border-white/80 dark:border-white/10
@@ -307,30 +307,30 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                     </div>
                   </div>
                   
-                  <div className="space-y-3">
-                    <p className="font-serif text-3xl text-gray-800 dark:text-gray-100 tracking-tight">
+                  <div className="space-y-2 md:space-y-3">
+                    <p className="font-serif text-2xl md:text-3xl text-gray-800 dark:text-gray-100 tracking-tight">
                       Drop files here
                     </p>
-                    <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-base leading-relaxed font-light">
+                    <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-sm md:text-base leading-relaxed font-light">
                       Screenshots, recordings, or text logs.
                     </p>
                   </div>
                   
-                  <div className="flex gap-3 justify-center mt-4 opacity-60 hover:opacity-100 transition-opacity">
+                  <div className="flex gap-2 md:gap-3 justify-center mt-2 md:mt-4 opacity-60 hover:opacity-100 transition-opacity flex-wrap">
                      {['JPG', 'PNG', 'MP4', 'MP3', 'WAV'].map(ext => (
-                       <span key={ext} className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest border border-gray-300 dark:border-gray-600 px-2.5 py-1 rounded-md bg-white/40 dark:bg-black/20 backdrop-blur-sm shadow-sm">
+                       <span key={ext} className="text-[9px] md:text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest border border-gray-300 dark:border-gray-600 px-2 py-1 rounded-md bg-white/40 dark:bg-black/20 backdrop-blur-sm shadow-sm">
                          {ext}
                        </span>
                      ))}
                   </div>
                 </motion.div>
               ) : (
-                <div className="relative w-full h-full min-h-[280px] flex items-center justify-center p-4">
+                <div className="relative w-full h-full min-h-[220px] md:min-h-[280px] flex items-center justify-center p-2 md:p-4">
                   <Reorder.Group 
                      axis="x" 
                      values={files} 
                      onReorder={onReorder} 
-                     className="flex flex-wrap gap-4 items-center justify-center w-full"
+                     className="flex flex-wrap gap-3 md:gap-4 items-center justify-center w-full"
                      onClick={(e: React.MouseEvent) => e.stopPropagation()} // Prevent triggering file upload when clicking valid area
                   >
                      <AnimatePresence>
@@ -347,7 +347,7 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                                  exit={{ opacity: 0, scale: 0.5 }}
                                  whileHover={{ scale: 1.05, zIndex: 10 }}
                                  whileDrag={{ scale: 1.1, zIndex: 20 }}
-                                 className="relative w-40 h-52 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-4 border-white dark:border-gray-700 flex flex-col items-center group/card cursor-grab active:cursor-grabbing"
+                                 className="relative w-32 h-44 md:w-40 md:h-52 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-4 border-white dark:border-gray-700 flex flex-col items-center group/card cursor-grab active:cursor-grabbing"
                               >
                                  <button 
                                    onClick={(e) => {
@@ -431,11 +431,11 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                      <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="w-20 h-52 flex items-center justify-center"
+                        className="w-20 md:w-20 h-44 md:h-52 flex items-center justify-center"
                      >
                         <button 
                             onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                            className="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:border-indigo-400 hover:bg-white dark:hover:bg-gray-800 transition-all"
+                            className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:border-indigo-400 hover:bg-white dark:hover:bg-gray-800 transition-all"
                             title="Add more files"
                         >
                             <UploadCloud size={20} />
@@ -443,7 +443,7 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                      </motion.div>
                   </Reorder.Group>
                   
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-white/90 dark:bg-gray-800/90 px-4 py-1.5 rounded-full backdrop-blur-md shadow-sm pointer-events-none z-0 border border-white/50 dark:border-gray-600">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-white/90 dark:bg-gray-800/90 px-4 py-1.5 rounded-full backdrop-blur-md shadow-sm pointer-events-none z-0 border border-white/50 dark:border-gray-600 whitespace-nowrap">
                     {files.length} file{files.length > 1 ? 's' : ''} added • Drag to reorder
                   </div>
                 </div>
@@ -484,14 +484,14 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                 <textarea 
                   ref={textareaRef}
                   placeholder="Paste chat logs, typed context, or specific details here (e.g. 'We met at a coffee shop and he said...')" 
-                  className="w-full bg-transparent border-none p-6 resize-none min-h-[250px] placeholder:text-gray-400 dark:placeholder:text-gray-600 text-base focus:ring-0 focus:outline-none custom-scrollbar leading-relaxed overflow-hidden text-gray-800 dark:text-gray-200"
+                  className="w-full bg-transparent border-none p-4 md:p-6 resize-none min-h-[220px] md:min-h-[250px] placeholder:text-gray-400 dark:placeholder:text-gray-600 text-sm md:text-base focus:ring-0 focus:outline-none custom-scrollbar leading-relaxed overflow-hidden text-gray-800 dark:text-gray-200"
                   value={textContext}
                   onChange={(e) => setTextContext(e.target.value)}
                   maxLength={maxChars}
                 />
                 
                 {/* Footer Status Bar */}
-                <div className="px-6 py-3 bg-white/30 dark:bg-black/20 border-t border-white/30 dark:border-gray-700 flex justify-between items-center">
+                <div className="px-4 md:px-6 py-3 bg-white/30 dark:bg-black/20 border-t border-white/30 dark:border-gray-700 flex justify-between items-center">
                    <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                       {textContext.length === 0 ? "Ready for input" : "Typing..."}
                    </div>
