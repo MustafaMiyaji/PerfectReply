@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { UploadCloud, FileImage, X, Film, PlayCircle, Maximize2, PauseCircle, Volume2, VolumeX, Minimize2, RotateCcw, Type, Trash2, ClipboardPaste, AlertCircle, GripVertical, Play, Mic, Music } from 'lucide-react';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { motion, AnimatePresence, Reorder, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { FileWithId } from '../../types';
 
 interface ContextDropzoneProps {
@@ -10,6 +10,41 @@ interface ContextDropzoneProps {
   onReorder: (files: FileWithId[]) => void;
   textContext: string;
   setTextContext: (text: string) => void;
+  isAnalyzing?: boolean; // New prop for visual effect
+}
+
+// 3D Tilt Card Component for File Previews
+const TiltFileCard = ({ children, className = "" }: { children?: React.ReactNode, className?: string }) => {
+    const x = useMotionValue(0);
+    const y = useMotionValue(0);
+    const mouseX = useSpring(x, { stiffness: 300, damping: 30 });
+    const mouseY = useSpring(y, { stiffness: 300, damping: 30 });
+    const rotateX = useTransform(mouseY, [-0.5, 0.5], [10, -10]);
+    const rotateY = useTransform(mouseX, [-0.5, 0.5], [-10, 10]);
+
+    function onMouseMove(event: React.MouseEvent<HTMLDivElement>) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const xPct = (event.clientX - rect.left) / rect.width - 0.5;
+        const yPct = (event.clientY - rect.top) / rect.height - 0.5;
+        x.set(xPct);
+        y.set(yPct);
+    }
+
+    function onMouseLeave() {
+        x.set(0);
+        y.set(0);
+    }
+
+    return (
+        <motion.div
+            style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+            onMouseMove={onMouseMove}
+            onMouseLeave={onMouseLeave}
+            className={className}
+        >
+            {children}
+        </motion.div>
+    )
 }
 
 export const ContextDropzone: React.FC<ContextDropzoneProps> = ({ 
@@ -18,7 +53,8 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
   onFileRemove,
   onReorder,
   textContext,
-  setTextContext
+  setTextContext,
+  isAnalyzing = false
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -282,6 +318,13 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
               onClick={() => fileInputRef.current?.click()}
               style={{ minHeight: '250px' }} // Adjusted for mobile
             >
+              {/* Scanning Laser Effect when analyzing */}
+              {isAnalyzing && (
+                  <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-[2.5rem]">
+                      <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent shadow-[0_0_15px_rgba(99,102,241,0.5)] animate-scan opacity-60"></div>
+                  </div>
+              )}
+
               <input 
                 type="file" 
                 ref={fileInputRef}
@@ -345,10 +388,10 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                                  initial={{ opacity: 0, scale: 0.8 }}
                                  animate={{ opacity: 1, scale: 1 }}
                                  exit={{ opacity: 0, scale: 0.5 }}
-                                 whileHover={{ scale: 1.05, zIndex: 10 }}
                                  whileDrag={{ scale: 1.1, zIndex: 20 }}
-                                 className="relative w-32 h-44 md:w-40 md:h-52 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-4 border-white dark:border-gray-700 flex flex-col items-center group/card cursor-grab active:cursor-grabbing"
+                                 className="relative"
                               >
+                                 <TiltFileCard className="w-32 h-44 md:w-40 md:h-52 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-4 border-white dark:border-gray-700 flex flex-col items-center group/card cursor-grab active:cursor-grabbing">
                                  <button 
                                    onClick={(e) => {
                                      e.stopPropagation(); 
@@ -363,6 +406,7 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                                  {/* File Preview */}
                                  <div 
                                     className="w-full h-full bg-gray-50 dark:bg-black rounded-lg overflow-hidden relative isolate"
+                                    style={{ transform: "translateZ(20px)" }}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setPreviewFile(fileObj.file);
@@ -417,11 +461,12 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                                      </div>
                                  </div>
                                  
-                                 <div className="w-full bg-white dark:bg-gray-800 pt-2 pb-1 px-2 flex flex-col items-center">
+                                 <div className="w-full bg-white dark:bg-gray-800 pt-2 pb-1 px-2 flex flex-col items-center" style={{ transform: "translateZ(10px)" }}>
                                    <span className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 truncate max-w-[90%]">
                                      {fileObj.file.name}
                                    </span>
                                  </div>
+                                 </TiltFileCard>
                               </Reorder.Item>
                            );
                         })}

@@ -1,8 +1,8 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { ChatAnalysis, GeneratedReply, VibeType, CustomVibeConfig } from '../types';
+import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { ChatAnalysis, GeneratedReply, VibeType, CustomVibeConfig, IcebreakerSuggestion } from '../types';
 
-// Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to get fresh client instance (important if API_KEY changes in runtime)
+const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Converts a File object to a Base64 string suitable for the Gemini API.
@@ -25,11 +25,47 @@ export const fileToPart = (file: File): Promise<{ inlineData: { data: string; mi
 };
 
 /**
+ * Helper to decode base64 to Uint8Array
+ */
+function base64ToBytes(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/**
+ * Helper to process PCM data into AudioBuffer
+ */
+export async function pcmToAudioBuffer(
+  data: Uint8Array,
+  ctx: AudioContext,
+  sampleRate: number = 24000,
+  numChannels: number = 1,
+): Promise<AudioBuffer> {
+  const dataInt16 = new Int16Array(data.buffer);
+  const frameCount = dataInt16.length / numChannels;
+  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
+  for (let channel = 0; channel < numChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    for (let i = 0; i < frameCount; i++) {
+      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    }
+  }
+  return buffer;
+}
+
+/**
  * Analyzes the chat context (files + text) to understand the partner's style.
  * Uses gemini-3-pro-preview for deep reasoning.
  */
 export const analyzeContext = async (files: File[], text: string, language: string): Promise<ChatAnalysis> => {
   try {
+    const ai = getAiClient();
     const fileParts = await Promise.all(files.map(fileToPart));
     
     // We construct a multipart request
@@ -37,8 +73,6 @@ export const analyzeContext = async (files: File[], text: string, language: stri
       ...fileParts,
       { text: `
         Analyze the conversation context provided (screenshots, screen recordings, audio/call recordings, and/or text).
-        If a video is provided, treat it as a scrolling view of a chat history.
-        If audio is provided, treat it as a conversation recording.
         Focus on the "Partner's" communication style.
         Ignore the "User" (me).
         
@@ -46,14 +80,21 @@ export const analyzeContext = async (files: File[], text: string, language: stri
         Additional context: ${text}
         
         Identify:
-        1. Their emotional baseline (Are they dry? Enthusiastic? Passive-aggressive?)
-        2. Key patterns (Do they use emojis? Short texts? Long paragraphs?)
-        3. The dynamic (Is it tense? Flirty? Professional?)
+        1. Their emotional baseline and key patterns.
+        2. "Red Flags": Look for signs of gaslighting, manipulation, love-bombing, negging, or passive-aggressiveness. If none, leave empty.
+        3. Personality Metrics (0-100 score):
+           - Empathy: How caring/understanding are they?
+           - Aggression: How confrontational/dominant?
+           - Humor: How funny/playful?
+           - Vulnerability: How open/emotional?
+           - Clarity: How direct/easy to understand?
         
         Return a JSON object with:
-        - summary: A direct, highly actionable piece of advice addressed to the user ("You"). Tell the user exactly how to adapt their communication style to match the partner. (e.g., "They are very concise, so avoid sending long paragraphs to keep the momentum going."). Ensure this is practical, specific to this conversation, and NOT generic.
-        - tags: Array of short behavioral tags (e.g., "Direct", "EmojiUser").
+        - summary: A direct, highly actionable piece of advice addressed to the user ("You").
+        - tags: Array of short behavioral tags.
         - partnerStyle: Brief description of their vibe.
+        - redFlags: Array of strings describing any toxic behavior found (e.g., "Deflects blame", "Uses guilt").
+        - personalityMetrics: Object with numeric scores (0-100) for empathy, aggression, humor, vulnerability, clarity.
       ` }
     ];
 
@@ -67,9 +108,21 @@ export const analyzeContext = async (files: File[], text: string, language: stri
           properties: {
             summary: { type: Type.STRING },
             tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-            partnerStyle: { type: Type.STRING }
+            partnerStyle: { type: Type.STRING },
+            redFlags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            personalityMetrics: {
+                type: Type.OBJECT,
+                properties: {
+                    empathy: { type: Type.NUMBER },
+                    aggression: { type: Type.NUMBER },
+                    humor: { type: Type.NUMBER },
+                    vulnerability: { type: Type.NUMBER },
+                    clarity: { type: Type.NUMBER }
+                },
+                required: ["empathy", "aggression", "humor", "vulnerability", "clarity"]
+            }
           },
-          required: ["summary", "tags", "partnerStyle"]
+          required: ["summary", "tags", "partnerStyle", "redFlags", "personalityMetrics"]
         }
       }
     });
@@ -94,9 +147,11 @@ export const generateReplies = async (
   intensity: number,
   files: File[],
   textContext: string,
-  language: string
+  language: string,
+  historyOverride?: string // New parameter for continuous chat
 ): Promise<GeneratedReply[]> => {
   try {
+    const ai = getAiClient();
     const fileParts = await Promise.all(files.map(fileToPart));
 
     const intensityDesc = intensity > 80 ? "Bold, high risk, very direct" : intensity > 40 ? "Balanced, clear interest" : "Safe, subtle, low pressure";
@@ -112,18 +167,19 @@ export const generateReplies = async (
         if (vibe === VibeType.Empathetic) vibeInstructions += " Prioritize validation and warmth.";
     }
 
-    // "System Instruction" logic embedded in prompt as per best practices for variable integration
+    const contextToUse = historyOverride 
+        ? `ORIGINAL BACKGROUND CONTEXT: ${textContext}\n\nUPDATED CONVERSATION LOG (Most recent at bottom):\n${historyOverride}` 
+        : `Additional Text Context: ${textContext}`;
+
     const prompt = `
       ROLE: You are an empathy engine. 
       Analyze the partner's communication style from the context.
       Match their energy. 
-      If they are dry, do not overwhelm them. 
-      If they are emotional, validate them first.
       
       CONTEXT:
       Partner Style: ${analysis.partnerStyle}
       Analysis: ${analysis.summary}
-      Additional Text Context: ${textContext}
+      ${contextToUse}
       Language: ${language || "Match the language used in the context files"}
       
       TASK:
@@ -135,8 +191,7 @@ export const generateReplies = async (
       
       INSTRUCTIONS:
       - Match the partner's energy but nudge it towards the selected Vibe.
-      - Keep it authentic to a human conversation (lowercase where appropriate, casual punctuation).
-      - Do not sound like a robot.
+      - Keep it authentic to a human conversation.
       - Ensure the replies are in ${language || "the same language as the conversation"}.
       
       Return JSON:
@@ -181,47 +236,103 @@ export const generateReplies = async (
 };
 
 /**
+ * Generates speech from text using Gemini 2.5 Flash TTS.
+ */
+export const generateSpeech = async (text: string, tone: string): Promise<Uint8Array> => {
+    try {
+        const ai = getAiClient();
+        const prompt = `Say the following with a ${tone} tone: "${text}"`;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash-preview-tts",
+            contents: [{ parts: [{ text: prompt }] }],
+            config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: { voiceName: 'Kore' },
+                    },
+                },
+            },
+        });
+
+        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        if (!base64Audio) {
+            throw new Error("No audio data returned from Gemini.");
+        }
+
+        return base64ToBytes(base64Audio);
+
+    } catch (error) {
+        console.error("Gemini TTS Error:", error);
+        throw error;
+    }
+};
+
+/**
  * Generates a reaction image / visual aid based on the context.
- * Uses gemini-2.5-flash-image for generation.
+ * Uses gemini-3-pro-image-preview for generation, falls back to gemini-2.5-flash-image.
  */
 export const generateReactionImage = async (
     analysis: ChatAnalysis
 ): Promise<string> => {
-    try {
-        // Simplified prompt to avoid safety filters and ensure image output
-        const prompt = `A high quality 3D render of a cute round emoji character expressing "${analysis.partnerStyle}". Digital art, sticker style, white background, expressive face.`;
+    const ai = getAiClient();
+    const prompt = `A high quality 3D render of a cute round emoji character expressing "${analysis.partnerStyle}". Digital art, sticker style, white background, expressive face.`;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts: [{ text: prompt }] },
-            // Important: No responseMimeType or Schema for image models
-        });
-
-        // Extract image
+    const extractImage = (response: any) => {
         let base64Image = "";
-        let textFallback = "";
-        
         if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
             for (const part of response.candidates[0].content.parts) {
                 if (part.inlineData) {
                     base64Image = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
                     break;
-                } else if (part.text) {
-                    textFallback = part.text;
                 }
             }
         }
-
-        if (!base64Image) {
-             console.warn("Gemini returned text instead of image:", textFallback);
-             throw new Error("The AI declined to generate an image for this context. Try a different vibe.");
-        }
-        
         return base64Image;
+    };
+
+    try {
+        // Attempt 1: Gemini 3 Pro (Higher Quality)
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-image-preview',
+            contents: { parts: [{ text: prompt }] },
+            config: {
+                imageConfig: {
+                    aspectRatio: "1:1",
+                    imageSize: "1K"
+                }
+            }
+        });
+
+        const image = extractImage(response);
+        if (!image) throw new Error("No image in Pro response");
+        return image;
 
     } catch (error) {
-        console.error("Image Gen Error", error);
-        throw error;
+        console.warn("Pro Image Generation failed, falling back to Flash Image.", error);
+        
+        // Attempt 2: Gemini 2.5 Flash Image (Fallback)
+        try {
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash-image',
+                contents: { parts: [{ text: prompt }] },
+                config: {
+                    imageConfig: {
+                        aspectRatio: "1:1"
+                        // Note: imageSize is NOT supported in Flash Image
+                    }
+                }
+            });
+            
+            const image = extractImage(response);
+            if (!image) throw new Error("No image in Flash response");
+            return image;
+            
+        } catch (fallbackError) {
+            console.error("Image Gen Error (Fallback)", fallbackError);
+            throw fallbackError;
+        }
     }
 }
 
@@ -229,83 +340,63 @@ export const generateReactionImage = async (
  * Handles the "Ask the Coach" chat functionality.
  */
 export const askRelationshipCoach = async (
-  files: File[],
-  textContext: string,
+  globalFiles: File[],
+  globalText: string,
   language: string,
   history: { role: 'user' | 'model', text: string }[],
   question: string,
   currentTurnFiles: File[] = []
 ): Promise<string> => {
   try {
-    const fileParts = await Promise.all(files.map(fileToPart));
+    const ai = getAiClient();
+    const globalFileParts = await Promise.all(globalFiles.map(fileToPart));
     const currentFilesParts = await Promise.all(currentTurnFiles.map(fileToPart));
 
-    // Construct the full history for the API
-    // We inject the files into the very first turn to provide context
     const contents = [];
 
-    // System instruction equivalent + Context
-    const systemPart = {
-      text: `
-        You are an expert Relationship Coach and Communication Specialist.
-        Your goal is to help the user understand the conversation context provided (files/text) and navigate their relationship dynamics.
-        
-        CONTEXT PROVIDED:
-        - Files: Screenshots/Recordings of the conversation.
-        - Text Note: ${textContext || "None"}
-        - Language: ${language || "Detect from files or user input"}
-        
-        INSTRUCTIONS:
-        - Answer the user's questions about the partner's intent, meaning, or hidden subtext.
-        - Be empathetic but realistic. Don't give false hope, but don't be cruel.
-        - Keep answers concise (under 150 words) unless asked for details.
-        - If the user asks for a specific reply, suggest one but explain the 'why'.
-      `
-    };
+    const contextPrompt = `
+      CONTEXT:
+      You are an expert Relationship Coach.
+      I have provided global context files.
+      Global Note: ${globalText || "None"}
+      Language: ${language}
+      
+      INSTRUCTIONS:
+      - Answer based on ALL files provided.
+      - Be empathetic, realistic, and concise.
+    `;
 
-    // If this is the first message in the session (history is empty), we bundle files with the question
     if (history.length === 0) {
-      contents.push({
-        role: 'user',
-        parts: [
-          ...fileParts,
-          ...currentFilesParts,
-          systemPart,
-          { text: question }
-        ]
-      });
+        contents.push({
+            role: 'user',
+            parts: [
+                ...globalFileParts,
+                ...currentFilesParts,
+                { text: contextPrompt + "\n\nUser Question: " + question }
+            ]
+        });
     } else {
-      // Reconstruct history
-      // Note: We can't easily resend files in every stateless request without bandwidth cost, 
-      // but for a robust specialized chat, we often need the files in the context.
-      // Strategy: Send files in the first turn of THIS request structure.
-      
-      // Map existing history
-      const historyParts = history.map((msg, index) => {
-        if (index === 0 && msg.role === 'user') {
-             // Inject global files into the FIRST user message recorded in history
-             return {
-                 role: 'user',
-                 parts: [...fileParts, systemPart, { text: msg.text }]
-             };
-        }
-        return {
-            role: msg.role,
-            parts: [{ text: msg.text }]
-        };
-      });
-      
-      contents.push(...historyParts);
-      
-      // Add current question with new files if any
-      contents.push({
-        role: 'user',
-        parts: [...currentFilesParts, { text: question }]
-      });
+        contents.push({
+            role: 'user',
+            parts: [...globalFileParts, { text: contextPrompt }]
+        });
+        contents.push({ role: 'model', parts: [{ text: "Understood. I've analyzed the context." }] });
+        
+        history.forEach(msg => {
+            contents.push({
+                role: msg.role,
+                parts: [{ text: msg.text }]
+            });
+        });
+        
+        contents.push({
+            role: 'user',
+            parts: [...currentFilesParts, { text: question }]
+        });
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Pro model for reasoning about text/images
+      model: 'gemini-3-pro-preview',
       contents: contents,
     });
 
@@ -316,3 +407,104 @@ export const askRelationshipCoach = async (
     return "I'm having a little trouble connecting to my intuition right now. Please try again in a moment.";
   }
 };
+
+/**
+ * Generates dating profile icebreakers/openers based on profile images/bios.
+ */
+export const generateIcebreakers = async (
+    files: File[], 
+    bioText: string
+): Promise<IcebreakerSuggestion[]> => {
+    try {
+        const ai = getAiClient();
+        const fileParts = await Promise.all(files.map(fileToPart));
+        
+        const prompt = `
+            Analyze these dating profile assets and bio.
+            Bio Text: "${bioText}"
+            
+            Generate 4 distinct opening lines (Icebreakers):
+            1. Observation
+            2. Playful
+            3. Direct
+            4. Creative
+            
+            Return JSON.
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: {
+                parts: [...fileParts, { text: prompt }]
+            },
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            category: { type: Type.STRING, enum: ['Observation', 'Playful', 'Direct', 'Creative'] },
+                            text: { type: Type.STRING },
+                            whyItWorks: { type: Type.STRING }
+                        },
+                        required: ["category", "text", "whyItWorks"]
+                    }
+                }
+            }
+        });
+
+        const jsonText = response.text || "[]";
+        return JSON.parse(jsonText) as IcebreakerSuggestion[];
+
+    } catch (error) {
+        console.error("Icebreaker Error:", error);
+        throw error;
+    }
+}
+
+/**
+ * Simulates the partner in a roleplay chat.
+ */
+export const simulatePartnerReply = async (
+    history: { role: 'user' | 'model', text: string }[],
+    analysis: ChatAnalysis,
+    userMessage: string
+): Promise<string> => {
+    const ai = getAiClient();
+    const prompt = `
+        You are roleplaying as the user's "Partner" based on previous analysis.
+        Partner Style: ${analysis.partnerStyle}
+        Summary of habits: ${analysis.summary}
+        Personality Traits:
+        - Empathy: ${analysis.personalityMetrics?.empathy || 50}/100
+        - Aggression: ${analysis.personalityMetrics?.aggression || 10}/100
+        - Humor: ${analysis.personalityMetrics?.humor || 50}/100
+        
+        INSTRUCTIONS:
+        - Reply to the user's latest message as the Partner would.
+        - Match their length, tone, and emoji usage strictly.
+        - Do NOT break character. Do NOT give advice. Just reply.
+        
+        Latest User Message: "${userMessage}"
+    `;
+    
+    // We send only text history to keep it lightweight for the roleplay loop
+    const chatHistory = history.map(h => ({
+        role: h.role,
+        parts: [{ text: h.text }]
+    }));
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: [
+                ...chatHistory,
+                { role: 'user', parts: [{ text: prompt }] }
+            ]
+        });
+        return response.text || "...";
+    } catch(e) {
+        return "(Roleplay error)";
+    }
+}

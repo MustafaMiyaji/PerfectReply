@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { GeneratedReply } from '../../types';
-import { Sparkles, Copy, CheckCircle2, ChevronDown, ChevronUp, BrainCircuit, Share2, ThumbsUp, ThumbsDown, RefreshCw, Wand2, Edit3, Check, Info } from 'lucide-react';
+import { Sparkles, Copy, CheckCircle2, ChevronDown, ChevronUp, BrainCircuit, ThumbsUp, ThumbsDown, RefreshCw, Wand2, Edit3, Check, Info, MessageSquarePlus, Play, Square, MessageCircle, Send, Loader2 } from 'lucide-react';
+import { SpotlightCard, HolographicOverlay, MiniAudioVisualizer, playSound } from '../ui/Visuals';
+import { generateSpeech, pcmToAudioBuffer } from '../../services/geminiService';
 
 interface ReplyCardProps {
   reply: GeneratedReply;
@@ -9,34 +11,107 @@ interface ReplyCardProps {
   onRegenerateSpecific?: (index: number) => void;
   onRegenerateAll?: () => void;
   isFocused?: boolean;
+  onSelectForContinuation?: (text: string) => void; 
+}
+
+// Confetti Component for Copy Action
+const ButtonConfetti = ({ active }: { active: boolean }) => {
+    if (!active) return null;
+    return (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
+            {[...Array(12)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                    animate={{ 
+                        x: (Math.random() - 0.5) * 100, 
+                        y: (Math.random() - 0.5) * 100 - 20, 
+                        opacity: 0,
+                        scale: 0 
+                    }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    className="absolute top-1/2 left-1/2 w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: ['#FF6B6B', '#4F46E5', '#10B981', '#F59E0B'][Math.floor(Math.random() * 4)] }}
+                />
+            ))}
+        </div>
+    )
 }
 
 const TypewriterText = ({ text }: { text: string }) => {
+  const characters = Array.from(text);
   return (
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        {text}
-      </motion.span>
+    <span className="inline-block">
+      {characters.map((char, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0, y: 2 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.01, delay: i * 0.008 }} // Faster typing
+        >
+          {char}
+        </motion.span>
+      ))}
+    </span>
   );
 };
 
-export const ReplyCard: React.FC<ReplyCardProps> = ({ reply, index, onRegenerateSpecific, onRegenerateAll, isFocused }) => {
+export const ReplyCard: React.FC<ReplyCardProps> = ({ reply, index, onRegenerateSpecific, onRegenerateAll, isFocused, onSelectForContinuation }) => {
   const [copied, setCopied] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentText, setCurrentText] = useState(reply.text);
+  const [isHovered, setIsHovered] = useState(false);
+  
+  // TTS State
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [sourceNode, setSourceNode] = useState<AudioBufferSourceNode | null>(null);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  
+  // Helper to clean quotes
+  const cleanText = (t: string) => t.replace(/^["']|["']$/g, '');
+  const [currentText, setCurrentText] = useState(cleanText(reply.text));
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const [showTooltip, setShowTooltip] = useState(false);
 
+  // 3D Tilt Logic
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const mouseX = useSpring(x, { stiffness: 500, damping: 100 });
+  const mouseY = useSpring(y, { stiffness: 500, damping: 100 });
+  const rotateX = useTransform(mouseY, [-0.5, 0.5], [3, -3]); 
+  const rotateY = useTransform(mouseX, [-0.5, 0.5], [-3, 3]);
+
+  function onMouseMove(event: React.MouseEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const xPct = (event.clientX - rect.left) / rect.width - 0.5;
+    const yPct = (event.clientY - rect.top) / rect.height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  }
+
+  function onMouseLeave() {
+    x.set(0);
+    y.set(0);
+    setShowTooltip(false);
+    setIsHovered(false);
+  }
+
   useEffect(() => {
-      setCurrentText(reply.text);
+      setCurrentText(cleanText(reply.text));
   }, [reply.text]);
   
+  // Stop audio if unmounting
+  useEffect(() => {
+      return () => {
+          if (sourceNode) sourceNode.stop();
+          if (audioContext && audioContext.state !== 'closed') audioContext.close();
+      };
+  }, []);
+
   // Scroll to focus
   useEffect(() => {
       if (isFocused && cardRef.current) {
@@ -52,33 +127,80 @@ export const ReplyCard: React.FC<ReplyCardProps> = ({ reply, index, onRegenerate
       }
   }, [isEditing]);
 
-  const handleCopy = () => {
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    playSound('success');
     navigator.clipboard.writeText(currentText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Perfect Reply',
-          text: currentText,
-        });
-      } catch (err) {
-        console.log('Error sharing', err);
+  const handleTTS = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      playSound('click');
+
+      // Stop if currently speaking
+      if (isSpeaking) {
+          if (sourceNode) {
+              sourceNode.stop();
+              setSourceNode(null);
+          }
+          setIsSpeaking(false);
+          return;
       }
-    } else {
-      handleCopy();
-    }
+
+      setIsAudioLoading(true);
+
+      try {
+          // 1. Get raw bytes using Gemini 2.5 Flash TTS
+          const audioData = await generateSpeech(currentText, reply.tone);
+
+          // 2. Setup Audio Context
+          let ctx = audioContext;
+          if (!ctx) {
+              ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+              setAudioContext(ctx);
+          }
+          if (ctx.state === 'suspended') await ctx.resume();
+
+          // 3. Decode PCM
+          const audioBuffer = await pcmToAudioBuffer(audioData, ctx);
+
+          // 4. Play
+          const source = ctx.createBufferSource();
+          source.buffer = audioBuffer;
+          source.connect(ctx.destination);
+          
+          source.onended = () => {
+              setIsSpeaking(false);
+              setSourceNode(null);
+          };
+
+          source.start();
+          setSourceNode(source);
+          setIsSpeaking(true);
+
+      } catch (err) {
+          console.error("TTS playback failed", err);
+      } finally {
+          setIsAudioLoading(false);
+      }
+  };
+
+  const openDeepLink = (platform: 'whatsapp' | 'sms') => {
+      playSound('click');
+      const encoded = encodeURIComponent(currentText);
+      if (platform === 'whatsapp') {
+          window.open(`https://wa.me/?text=${encoded}`, '_blank');
+      } else {
+          window.open(`sms:&body=${encoded}`, '_self');
+      }
   };
 
   const handleFeedback = (type: 'up' | 'down') => {
+    playSound('click');
     setFeedback(prev => prev === type ? null : type);
   };
-
-  // Generate particles for the starburst effect
-  const particles = Array.from({ length: 24 });
 
   // Tone color mapping
   const getToneColor = (tone: string) => {
@@ -93,200 +215,233 @@ export const ReplyCard: React.FC<ReplyCardProps> = ({ reply, index, onRegenerate
   return (
     <motion.div 
       ref={cardRef}
-      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+      initial={{ opacity: 0, y: 50, scale: 0.95 }}
       animate={{ 
           opacity: 1, 
           y: 0, 
           scale: isFocused ? 1.02 : 1,
           boxShadow: isFocused ? '0 0 0 2px rgba(99, 102, 241, 0.5), 0 20px 40px -10px rgba(0,0,0,0.2)' : '0 8px 32px 0 rgba(31, 38, 135, 0.07)'
       }}
-      transition={{ delay: index * 0.2, type: "spring", stiffness: 100, damping: 15 }}
-      className={`glass-panel rounded-[2rem] p-6 md:p-8 flex flex-col h-full hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 hover:-translate-y-2 relative overflow-visible group border border-white/60 dark:border-white/10 ${isFocused ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 z-10' : ''}`}
+      transition={{ delay: index * 0.1, type: "spring", stiffness: 100, damping: 20 }}
+      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+      onMouseMove={onMouseMove}
+      onMouseEnter={() => { setIsHovered(true); playSound('hover'); }}
+      onMouseLeave={onMouseLeave}
+      className="h-full"
     >
-      {/* Noise Texture Overlay */}
-      <div className="absolute inset-0 opacity-[0.04] pointer-events-none mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
-
-      {/* Top Gradient Line */}
-      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-soft-blush via-heartbeat-red to-deep-lavender opacity-60 rounded-t-[2rem]"></div>
+      <SpotlightCard className={`glass-panel rounded-[2rem] p-6 md:p-8 flex flex-col h-full relative group border border-white/60 dark:border-white/10 ${isFocused ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 z-10' : ''}`} spotlightColor="rgba(99, 102, 241, 0.15)">
       
-      <div className="mb-6 flex justify-between items-start">
-        <span className={`text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border shadow-sm flex items-center gap-1.5 ${getToneColor(reply.tone)}`}>
-           <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60"></span>
-          {reply.tone}
-        </span>
-        
-        <div className="flex gap-1 -mr-2">
-            <button
-               onClick={() => setIsEditing(!isEditing)}
-               className={`p-2 rounded-full transition-all duration-300 ${isEditing ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/50 dark:hover:bg-gray-700/50'}`}
-               title="Edit reply"
-            >
-                {isEditing ? <Check size={14} /> : <Edit3 size={14} />}
-            </button>
-            {onRegenerateSpecific && (
-                <button 
-                  onClick={() => onRegenerateSpecific(index)}
-                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 rounded-full transition-all active:rotate-180 duration-500"
-                  title="Regenerate this specific reply"
-                >
-                  <RefreshCw size={14} />
-                </button>
-            )}
-            <button 
-               onClick={handleShare}
-               className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-700/50 rounded-full transition-colors"
-               title="Share reply"
-            >
-              <Share2 size={14} />
-            </button>
-        </div>
+      {/* 3D Depth Elements */}
+      <div style={{ transform: "translateZ(0px)" }} className="absolute inset-0 z-0">
+          <HolographicOverlay />
+          {/* Noise Texture Overlay */}
+          <div className="absolute inset-0 opacity-[0.04] pointer-events-none mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
+          {/* Top Gradient Line */}
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-soft-blush via-heartbeat-red to-deep-lavender opacity-60 rounded-t-[2rem]"></div>
       </div>
-
-      <div className="flex-grow mb-8 relative">
-        {isEditing ? (
-            <textarea
-                ref={textareaRef}
-                value={currentText}
-                onChange={(e) => {
-                    setCurrentText(e.target.value);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = e.target.scrollHeight + 'px';
-                }}
-                className="w-full bg-transparent border-none p-0 resize-none focus:ring-0 text-[1.25rem] font-serif text-gray-800 dark:text-gray-100 leading-[1.6] font-medium"
-            />
-        ) : (
-            <p className="font-serif text-lg md:text-[1.25rem] text-gray-800 dark:text-gray-100 leading-[1.6] select-all cursor-text selection:bg-heartbeat-red/20 dark:selection:bg-heartbeat-red/40 font-medium">
-                <TypewriterText text={currentText} />
-            </p>
-        )}
-      </div>
-
-      <div className="mb-6 relative">
-        <button 
-          onClick={() => setShowReasoning(!showReasoning)}
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-          className="group/btn flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-heartbeat-red dark:hover:text-heartbeat-red transition-colors mb-2 focus:outline-none w-full text-left"
-        >
-          <div className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-700/50 group-hover/btn:bg-red-50 dark:group-hover/btn:bg-red-900/20 transition-colors">
-            <BrainCircuit size={14} className={`transition-transform duration-700 ${showReasoning ? 'rotate-180 text-heartbeat-red' : 'group-hover/btn:rotate-12'}`} />
-          </div>
-          <span className="border-b border-transparent group-hover/btn:border-red-200 dark:group-hover/btn:border-red-800 transition-colors">
-            Psychology breakdown
-          </span>
-          {showReasoning ? <ChevronUp size={14} className="ml-auto" /> : <ChevronDown size={14} className="ml-auto" />}
-        </button>
-
-        {/* Hover Tooltip */}
-        <AnimatePresence>
-            {!showReasoning && showTooltip && (
-                <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-gray-800 dark:bg-gray-700 text-white text-xs rounded-xl shadow-xl z-20 pointer-events-none"
+      
+      <div style={{ transform: "translateZ(20px)" }} className="relative z-10 flex-grow flex flex-col">
+          <div className="mb-6 flex flex-wrap justify-between items-start gap-2">
+            <span className={`text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg border shadow-sm flex items-center gap-1.5 transition-transform duration-300 hover:scale-105 ${getToneColor(reply.tone)}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-pulse"></span>
+              {reply.tone}
+            </span>
+            
+            <div className={`flex gap-1 -mr-2 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-60'}`}>
+                {/* TTS Button */}
+                <button
+                  onClick={handleTTS}
+                  disabled={isAudioLoading}
+                  className={`p-2 rounded-full transition-all duration-300 flex items-center gap-2 ${isSpeaking ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300' : 'text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/50 dark:hover:bg-gray-700/50'}`}
+                  title={isSpeaking ? "Stop listening" : "Hear tone"}
                 >
-                    <div className="flex items-center gap-2 mb-1 text-gray-400">
-                        <Info size={10} />
-                        <span className="font-bold uppercase tracking-wider text-[10px]">Why this works</span>
-                    </div>
-                    <p>Understanding the "why" helps you learn effective communication patterns for future conversations.</p>
-                    <div className="absolute bottom-0 left-6 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800 dark:bg-gray-700"></div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-        
-        <AnimatePresence>
-          {showReasoning && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="bg-gradient-to-br from-indigo-50/50 to-white/80 dark:from-indigo-900/30 dark:to-gray-800/80 rounded-xl p-5 text-sm text-gray-600 dark:text-gray-300 italic border border-indigo-100/60 dark:border-indigo-800/60 shadow-inner mt-2 backdrop-blur-sm relative overflow-hidden group/box">
-                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-heartbeat-red to-purple-400 opacity-60"></div>
-                
-                <div className="flex gap-2">
-                   <Sparkles size={16} className="text-heartbeat-red flex-shrink-0 mt-0.5 animate-pulse" />
-                   <span className="leading-relaxed">{reply.reasoning}</span>
-                </div>
-                
-                {/* Feedback Mechanism */}
-                <div className="mt-4 pt-3 border-t border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500 font-normal not-italic">
-                    <div className="flex items-center gap-2">
-                        <span>Helpful?</span>
-                        <motion.button 
-                        whileTap={{ scale: 0.8 }}
-                        onClick={() => handleFeedback('up')}
-                        className={`p-1.5 rounded hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-600 dark:hover:text-green-400 transition-colors ${feedback === 'up' ? 'text-green-600 bg-green-50 dark:bg-green-900/30 ring-1 ring-green-200 dark:ring-green-800' : ''}`}
-                        >
-                            <ThumbsUp size={14} className={feedback === 'up' ? 'fill-current' : ''} />
-                        </motion.button>
-                        <motion.button 
-                        whileTap={{ scale: 0.8 }}
-                        onClick={() => handleFeedback('down')}
-                        className={`p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 transition-colors ${feedback === 'down' ? 'text-red-500 bg-red-50 dark:bg-red-900/30 ring-1 ring-red-200 dark:ring-red-800' : ''}`}
-                        >
-                            <ThumbsDown size={14} className={feedback === 'down' ? 'fill-current' : ''} />
-                        </motion.button>
-                    </div>
-
-                    {onRegenerateAll && (
-                        <button 
-                          onClick={onRegenerateAll} 
-                          className="flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group/regen"
-                        >
-                            <Wand2 size={12} className="group-hover/regen:rotate-12 transition-transform"/> Try new set
-                        </button>
+                    {isAudioLoading ? (
+                        <Loader2 size={14} className="animate-spin text-indigo-500" />
+                    ) : isSpeaking ? (
+                        <Square size={14} className="fill-current" />
+                    ) : (
+                        <Play size={14} className="ml-0.5" />
                     )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                    {(isSpeaking || isAudioLoading) && <MiniAudioVisualizer isPlaying={isSpeaking && !isAudioLoading} />}
+                </button>
 
-      <button 
-        onClick={handleCopy}
-        className={`
-          relative w-full py-4 rounded-xl font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition-all duration-500 overflow-visible mt-auto group/copy
-          ${copied 
-            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/50 ring-4 ring-emerald-100 dark:ring-emerald-900 scale-[1.02]' 
-            : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200 shadow-xl shadow-gray-200 dark:shadow-black/40 hover:shadow-2xl hover:shadow-gray-300 dark:hover:shadow-black/60 hover:-translate-y-0.5 active:scale-[0.98]'
-          }
-        `}
-      >
-        <div className="relative z-10 flex items-center gap-2">
-          {copied ? <CheckCircle2 size={18} className="animate-bounce" /> : <Copy size={18} className="group-hover/copy:scale-110 transition-transform" />}
-          {copied ? 'Copied!' : 'Copy to Clipboard'}
-        </div>
-        
-        {/* Enhanced Starburst Confetti Effect */}
-        {copied && particles.map((_, i) => {
-          const angle = (i / particles.length) * 360;
-          const delay = Math.random() * 0.2;
-          return (
-            <motion.div
-              key={i}
-              initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
-              animate={{
-                x: Math.cos((angle * Math.PI) / 180) * (100 + Math.random() * 40),
-                y: Math.sin((angle * Math.PI) / 180) * (100 + Math.random() * 40),
-                opacity: 0,
-                scale: Math.random() * 0.4 + 0.4,
-                rotate: Math.random() * 360
-              }}
-              transition={{ duration: 0.6, delay: delay, ease: "easeOut" }}
-              className={`absolute w-2 h-2 rounded-full pointer-events-none z-0 ${
-                i % 4 === 0 ? 'bg-yellow-400' : 
-                i % 4 === 1 ? 'bg-heartbeat-red' : 
-                i % 4 === 2 ? 'bg-purple-400' : 'bg-emerald-400'
-              }`}
-            />
-          );
-        })}
-      </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsEditing(!isEditing); playSound('click'); }}
+                  className={`p-2 rounded-full transition-all duration-300 ${isEditing ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/50 dark:hover:bg-gray-700/50'}`}
+                  title="Edit reply"
+                >
+                    {isEditing ? <Check size={14} /> : <Edit3 size={14} />}
+                </button>
+                {onRegenerateSpecific && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onRegenerateSpecific(index); playSound('click'); }}
+                      className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 rounded-full transition-all active:rotate-180 duration-500"
+                      title="Regenerate this specific reply"
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                )}
+            </div>
+          </div>
+
+          <div className="flex-grow mb-8 relative">
+            {isEditing ? (
+                <textarea
+                    ref={textareaRef}
+                    value={currentText}
+                    onChange={(e) => {
+                        setCurrentText(e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
+                    className="w-full bg-transparent border-none p-0 resize-none focus:ring-0 text-[1.25rem] font-serif text-gray-800 dark:text-gray-100 leading-[1.6] font-medium"
+                />
+            ) : (
+                <p className="font-serif text-lg md:text-[1.25rem] text-gray-800 dark:text-gray-100 leading-[1.6] select-all cursor-text selection:bg-heartbeat-red/20 dark:selection:bg-heartbeat-red/40 font-medium">
+                    <TypewriterText text={currentText} />
+                </p>
+            )}
+          </div>
+
+          <div className="mb-6 relative">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowReasoning(!showReasoning); playSound('click'); }}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              className="group/btn flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-heartbeat-red dark:hover:text-heartbeat-red transition-colors mb-2 focus:outline-none w-full text-left"
+            >
+              <div className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-700/50 group-hover/btn:bg-red-50 dark:group-hover/btn:bg-red-900/20 transition-colors">
+                <BrainCircuit size={14} className={`transition-transform duration-700 ${showReasoning ? 'rotate-180 text-heartbeat-red' : 'group-hover/btn:rotate-12'}`} />
+              </div>
+              <span className="border-b border-transparent group-hover/btn:border-red-200 dark:group-hover/btn:border-red-800 transition-colors">
+                Psychology breakdown
+              </span>
+              {showReasoning ? <ChevronUp size={14} className="ml-auto" /> : <ChevronDown size={14} className="ml-auto" />}
+            </button>
+
+            {/* Hover Tooltip */}
+            <AnimatePresence>
+                {!showReasoning && showTooltip && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 5, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-gray-800/90 dark:bg-gray-700/90 backdrop-blur-md text-white text-xs rounded-xl shadow-xl z-20 pointer-events-none border border-white/10"
+                    >
+                        <div className="flex items-center gap-2 mb-1 text-gray-400">
+                            <Info size={10} />
+                            <span className="font-bold uppercase tracking-wider text-[10px]">Why this works</span>
+                        </div>
+                        <p>Understanding the "why" helps you learn effective communication patterns for future conversations.</p>
+                        <div className="absolute bottom-0 left-6 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800 dark:bg-gray-700"></div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            
+            <AnimatePresence>
+              {showReasoning && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0, rotateX: -90 }}
+                  animate={{ height: 'auto', opacity: 1, rotateX: 0 }}
+                  exit={{ height: 0, opacity: 0, rotateX: -90 }}
+                  transition={{ duration: 0.4, type: "spring" }}
+                  className="overflow-hidden perspective-1000"
+                >
+                  <div className="bg-gradient-to-br from-indigo-50/50 to-white/80 dark:from-indigo-900/30 dark:to-gray-800/80 rounded-xl p-5 text-sm text-gray-600 dark:text-gray-300 italic border border-indigo-100/60 dark:border-indigo-800/60 shadow-inner mt-2 backdrop-blur-sm relative overflow-hidden group/box">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-heartbeat-red to-purple-400 opacity-60"></div>
+                    
+                    <div className="flex gap-2">
+                      <Sparkles size={16} className="text-heartbeat-red flex-shrink-0 mt-0.5 animate-pulse" />
+                      <span className="leading-relaxed">{reply.reasoning}</span>
+                    </div>
+                    
+                    {/* Feedback Mechanism */}
+                    <div className="mt-4 pt-3 border-t border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500 font-normal not-italic">
+                        <div className="flex items-center gap-2">
+                            <span>Helpful?</span>
+                            <motion.button 
+                            whileTap={{ scale: 0.8 }}
+                            onClick={(e) => { e.stopPropagation(); handleFeedback('up'); }}
+                            className={`p-1.5 rounded hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-600 dark:hover:text-green-400 transition-colors ${feedback === 'up' ? 'text-green-600 bg-green-50 dark:bg-green-900/30 ring-1 ring-green-200 dark:ring-green-800' : ''}`}
+                            >
+                                <ThumbsUp size={14} className={feedback === 'up' ? 'fill-current' : ''} />
+                            </motion.button>
+                            <motion.button 
+                            whileTap={{ scale: 0.8 }}
+                            onClick={(e) => { e.stopPropagation(); handleFeedback('down'); }}
+                            className={`p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 transition-colors ${feedback === 'down' ? 'text-red-500 bg-red-50 dark:bg-red-900/30 ring-1 ring-red-200 dark:ring-red-800' : ''}`}
+                            >
+                                <ThumbsDown size={14} className={feedback === 'down' ? 'fill-current' : ''} />
+                            </motion.button>
+                        </div>
+
+                        {onRegenerateAll && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); onRegenerateAll(); playSound('click'); }}
+                              className="flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group/regen"
+                            >
+                                <Wand2 size={12} className="group-hover/regen:rotate-12 transition-transform"/> Try new set
+                            </button>
+                        )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Action Row */}
+          <div className="mt-auto flex flex-col gap-2">
+              <div className="flex gap-2">
+                <button 
+                    onClick={handleCopy}
+                    className={`
+                    relative flex-grow py-3.5 rounded-xl font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition-all duration-300 overflow-hidden group/copy
+                    ${copied 
+                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/50 scale-[0.98]' 
+                        : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200 shadow-xl shadow-gray-200 dark:shadow-black/40 hover:-translate-y-0.5 active:scale-[0.98]'
+                    }
+                    `}
+                >
+                    {!copied && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/copy:translate-x-full transition-transform duration-700 ease-in-out"></div>
+                    )}
+                    <div className="relative z-10 flex items-center gap-2">
+                    {copied ? <CheckCircle2 size={18} className="animate-bounce" /> : <Copy size={18} className="group-hover/copy:scale-110 transition-transform" />}
+                    {copied ? 'Copied!' : 'Copy to Clipboard'}
+                    </div>
+                    <ButtonConfetti active={copied} />
+                </button>
+
+                {onSelectForContinuation && (
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onSelectForContinuation(currentText); playSound('click'); }}
+                        className="px-4 py-3.5 rounded-xl font-bold text-sm bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-gray-600 hover:bg-indigo-50 dark:hover:bg-gray-600 transition-all shadow-sm flex items-center gap-2 group/cont hover:scale-105"
+                        title="I sent this one! Continue conversation."
+                    >
+                        <MessageSquarePlus size={18} className="group-hover/cont:scale-110 transition-transform" />
+                    </button>
+                )}
+              </div>
+
+              {/* Quick Actions (Deep Linking) */}
+              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 h-0 group-hover:h-auto overflow-hidden">
+                  <button 
+                    onClick={() => openDeepLink('whatsapp')}
+                    className="flex-1 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-xs font-semibold hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors flex items-center justify-center gap-1 border border-green-200 dark:border-green-800"
+                  >
+                      <MessageCircle size={14} /> WhatsApp
+                  </button>
+                  <button 
+                    onClick={() => openDeepLink('sms')}
+                    className="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-1 border border-blue-200 dark:border-blue-800"
+                  >
+                      <Send size={14} /> Message
+                  </button>
+              </div>
+          </div>
+      </div>
+      </SpotlightCard>
     </motion.div>
   );
 };

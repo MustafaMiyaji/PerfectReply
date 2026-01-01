@@ -1,0 +1,134 @@
+
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Send, User, Bot, RefreshCw, Mic, Volume2 } from 'lucide-react';
+import { ChatAnalysis } from '../../types';
+import { simulatePartnerReply } from '../../services/geminiService';
+import { playSound } from '../ui/Visuals';
+
+interface RoleplayModalProps {
+  onClose: () => void;
+  analysis: ChatAnalysis;
+}
+
+interface Message {
+  role: 'user' | 'model';
+  text: string;
+}
+
+export const RoleplayModal: React.FC<RoleplayModalProps> = ({ onClose, analysis }) => {
+  const [messages, setMessages] = useState<Message[]>([
+    { role: 'model', text: "Ready to practice? I'll act as your partner based on the analysis. Say something!" }
+  ]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    playSound('click');
+    const userMsg = input;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setIsTyping(true);
+
+    try {
+        const reply = await simulatePartnerReply(messages, analysis, userMsg);
+        setMessages(prev => [...prev, { role: 'model', text: reply }]);
+        playSound('success');
+    } catch (e) {
+        setMessages(prev => [...prev, { role: 'model', text: "(Connection error in roleplay engine)" }]);
+    } finally {
+        setIsTyping(false);
+    }
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+    >
+        <motion.div 
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            className="w-full max-w-2xl bg-gray-900 rounded-3xl overflow-hidden shadow-2xl border border-gray-700 flex flex-col h-[80vh]"
+        >
+            {/* Header */}
+            <div className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-600 rounded-lg">
+                        <Bot size={20} className="text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-white font-bold">Practice Mode</h3>
+                        <p className="text-xs text-gray-400">Simulating partner: {analysis.partnerStyle}</p>
+                    </div>
+                </div>
+                <button onClick={onClose} className="p-2 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-colors">
+                    <X size={20} />
+                </button>
+            </div>
+
+            {/* Chat Area */}
+            <div className="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-900/50">
+                {messages.map((msg, idx) => (
+                    <motion.div 
+                        key={idx}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                    >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-pink-600' : 'bg-indigo-600'}`}>
+                            {msg.role === 'user' ? <User size={14} className="text-white" /> : <Bot size={14} className="text-white" />}
+                        </div>
+                        <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${msg.role === 'user' ? 'bg-pink-600/20 text-pink-100 border border-pink-500/30' : 'bg-gray-800 text-gray-200 border border-gray-700'}`}>
+                            {msg.text}
+                        </div>
+                    </motion.div>
+                ))}
+                {isTyping && (
+                    <div className="flex gap-4">
+                        <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                            <Bot size={14} className="text-white" />
+                        </div>
+                        <div className="bg-gray-800 p-4 rounded-2xl border border-gray-700 flex gap-1">
+                            <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></span>
+                            <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></span>
+                            <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></span>
+                        </div>
+                    </div>
+                )}
+                <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="p-4 bg-gray-800 border-t border-gray-700">
+                <div className="relative">
+                    <input 
+                        type="text" 
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                        placeholder="Type your practice reply..."
+                        className="w-full bg-gray-900 border border-gray-700 rounded-full px-6 py-4 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 pr-14"
+                        autoFocus
+                    />
+                    <button 
+                        onClick={handleSend}
+                        disabled={!input.trim() || isTyping}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 hover:bg-indigo-500 rounded-full text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Send size={18} />
+                    </button>
+                </div>
+            </div>
+        </motion.div>
+    </motion.div>
+  );
+};

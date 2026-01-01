@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { VibeType, CustomVibeConfig } from '../../types';
-import { Check, Palette, X, Zap, Heart, Shield, Smile, Star, Coffee, Ghost, Crown, Save, Trash2, ChevronDown } from 'lucide-react';
+import { Check, Palette, X, Zap, Heart, Shield, Smile, Star, Coffee, Ghost, Crown, Save, Trash2, ChevronDown, Flame, Sun, Moon, Cloud, Music, Feather, Key, Anchor, Gift, Bell, Sparkles } from 'lucide-react';
 import { motion, useMotionTemplate, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
 
 interface VibeSelectorProps {
@@ -28,7 +28,27 @@ const ICON_MAP: Record<string, React.ReactNode> = {
     'Star': <Star size={18} />,
     'Coffee': <Coffee size={18} />,
     'Ghost': <Ghost size={18} />,
-    'Crown': <Crown size={18} />
+    'Crown': <Crown size={18} />,
+    'Flame': <Flame size={18} />,
+    'Sun': <Sun size={18} />,
+    'Moon': <Moon size={18} />,
+    'Cloud': <Cloud size={18} />,
+    'Music': <Music size={18} />,
+    'Feather': <Feather size={18} />,
+    'Key': <Key size={18} />,
+    'Anchor': <Anchor size={18} />,
+    'Gift': <Gift size={18} />,
+    'Bell': <Bell size={18} />
+};
+
+// Insights for standard vibes
+const VIBE_INSIGHTS: Record<string, string> = {
+    [VibeType.Spark]: "Uses playful teasing and ambiguity to build tension. Prioritizes wit over information.",
+    [VibeType.Repair]: "Focuses on validation and accountability. Lowers defenses to de-escalate conflict.",
+    [VibeType.Cool]: "Matches length and response time. Shows interest without appearing invested.",
+    [VibeType.Deep]: "Encourages vulnerability by asking open-ended questions and sharing emotions.",
+    [VibeType.Humorous]: "Diffuses tension with comedy. Good for breaking the ice or pivoting topics.",
+    [VibeType.Empathetic]: "Centers the other person's feelings. Mirrors their emotional state."
 };
 
 const TiltCard = ({ children, isSelected, onClick, color, ...props }: any) => {
@@ -45,7 +65,7 @@ const TiltCard = ({ children, isSelected, onClick, color, ...props }: any) => {
         const { left, top, width, height } = currentTarget.getBoundingClientRect();
         const xPct = (clientX - left) / width - 0.5;
         const yPct = (clientY - top) / height - 0.5;
-        x.set(xPct * 15); // Reduced tilt slightly
+        x.set(xPct * 15);
         y.set(yPct * -15);
     }
 
@@ -54,7 +74,6 @@ const TiltCard = ({ children, isSelected, onClick, color, ...props }: any) => {
         y.set(0);
     }
 
-    // Determine shadow color based on custom hex
     const isCustomHex = color && color.startsWith('#');
     const shadowStyle = isSelected && isCustomHex 
         ? { boxShadow: `0 20px 40px -10px ${color}40`, border: `2px solid ${color}` } 
@@ -87,7 +106,6 @@ const TiltCard = ({ children, isSelected, onClick, color, ...props }: any) => {
                 {children}
             </div>
             
-             {/* Glow Effect for Selected */}
             {isSelected && !isCustomHex && (
               <div className={`absolute inset-0 blur-2xl opacity-40 -z-10 rounded-2xl ${color.split(' ')[0].replace('bg-', 'bg-')}`} style={{ transform: "translateZ(-10px)" }}></div>
             )}
@@ -100,12 +118,8 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
     const [description, setDescription] = useState(initialConfig?.description || '');
     const [customHex, setCustomHex] = useState(initialConfig?.color && initialConfig.color.startsWith('#') ? initialConfig.color : '#6366f1');
     const [selectedIcon, setSelectedIcon] = useState(initialConfig?.iconName || 'Palette');
-    
-    // Check if initial color was a hex or a class
     const isHexInitially = initialConfig?.color?.startsWith('#');
     const [selectedPreset, setSelectedPreset] = useState(isHexInitially ? null : initialConfig?.color || 'bg-purple-100 text-purple-600 border-purple-200');
-
-    // Presets State
     const [savedPresets, setSavedPresets] = useState<CustomVibeConfig[]>([]);
     const [showPresets, setShowPresets] = useState(false);
 
@@ -182,7 +196,6 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
                 className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-2xl w-full max-w-md p-6 md:p-8 relative overflow-hidden border border-white/20 dark:border-white/10 max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Close Button */}
                 <button 
                     onClick={onClose} 
                     className="absolute top-4 right-4 md:top-6 md:right-6 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full p-2 transition-colors"
@@ -202,7 +215,6 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
                             </div>
                         </div>
                         
-                        {/* Preset Dropdown */}
                         <div className="relative w-full sm:w-auto">
                             <button 
                                 onClick={() => setShowPresets(!showPresets)}
@@ -268,9 +280,8 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
                     <div>
                          <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 ml-1">Icon & Color</label>
                          <div className="flex flex-col sm:flex-row items-center justify-between bg-gray-50 dark:bg-gray-900 p-3 rounded-xl border border-gray-100 dark:border-gray-700 gap-3">
-                             {/* Icon Picker */}
-                             <div className="grid grid-cols-5 gap-2 w-full sm:w-auto justify-items-center">
-                                 {Object.entries(ICON_MAP).slice(0, 5).map(([name, icon]) => (
+                             <div className="grid grid-cols-6 gap-2 w-full sm:w-auto justify-items-center max-h-32 overflow-y-auto custom-scrollbar p-1">
+                                 {Object.entries(ICON_MAP).map(([name, icon]) => (
                                      <button
                                          key={name}
                                          onClick={() => setSelectedIcon(name)}
@@ -281,10 +292,9 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
                                  ))}
                              </div>
 
-                             <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-gray-700 mx-2"></div>
+                             <div className="hidden sm:block w-px h-16 bg-gray-200 dark:bg-gray-700 mx-2"></div>
                              <div className="sm:hidden w-full h-px bg-gray-200 dark:bg-gray-700 my-1"></div>
 
-                             {/* Color Picker */}
                              <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
                                 {colors.slice(0, 3).map((c) => (
                                     <button 
@@ -353,98 +363,125 @@ export const VibeSelector: React.FC<VibeSelectorProps> = ({ selectedVibe, onSele
     }
   };
 
+  const currentInsight = selectedVibe === VibeType.Custom 
+    ? (customVibe ? `Custom Strategy: ${customVibe.description}` : "Define a custom strategy.") 
+    : VIBE_INSIGHTS[selectedVibe as string] || "Balances engagement and safety.";
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 perspective-1000">
-      {options.map((option, idx) => {
-        const isSelected = selectedVibe === option.type;
-        return (
-          <TiltCard
-            key={option.type}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05 }}
-            onClick={() => onSelect(option.type)}
-            isSelected={isSelected}
-            color={option.color}
-            title={option.desc}
-          >
-            <div className="flex items-center justify-between mb-3 relative z-10 w-full pointer-events-none">
-              <div className={`
-                p-2 rounded-xl transition-all duration-300 shadow-sm
-                ${isSelected ? 'bg-white/90 dark:bg-gray-800/90 scale-110 rotate-3' : 'bg-gray-100 dark:bg-gray-700/50 group-hover:bg-white dark:group-hover:bg-gray-700'}
-              `}>
-                {option.icon}
-              </div>
-              
-              {/* Selection Checkmark */}
-              <div className={`
-                w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
-                ${isSelected ? 'bg-current opacity-100 scale-100' : 'bg-gray-200 dark:bg-gray-700 opacity-0 scale-50'}
-              `}>
-                 <Check size={12} className="text-white dark:text-gray-900" strokeWidth={3} />
-              </div>
-            </div>
-            
-            <div className="font-bold text-sm mb-1 relative z-10 text-gray-800 dark:text-gray-100 pointer-events-none">{option.label}</div>
-            
-            <div className={`text-[11px] relative z-10 font-medium leading-tight transition-colors pointer-events-none ${isSelected ? 'opacity-90 text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>
-              {option.desc}
-            </div>
-          </TiltCard>
-        );
-      })}
-
-      {/* Custom Vibe Card */}
-      <div className="relative h-full min-h-[140px] z-10">
-         <AnimatePresence>
-            {isEditingCustom && (
-                <CustomVibeForm 
-                    onClose={() => setIsEditingCustom(false)} 
-                    onSave={handleCustomSave} 
-                    initialConfig={customVibe}
-                />
-            )}
-         </AnimatePresence>
-         
-         {!isEditingCustom && (
-             <TiltCard
-                onClick={handleCustomClick}
-                isSelected={selectedVibe === VibeType.Custom}
-                color={customVibe ? customVibe.color : "bg-gray-50 dark:bg-gray-800/50 border-dashed border-gray-300 dark:border-gray-600"}
-             >
+    <div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 perspective-1000">
+        {options.map((option, idx) => {
+            const isSelected = selectedVibe === option.type;
+            return (
+            <TiltCard
+                key={option.type}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                onClick={() => onSelect(option.type)}
+                isSelected={isSelected}
+                color={option.color}
+                title={option.desc}
+            >
                 <div className="flex items-center justify-between mb-3 relative z-10 w-full pointer-events-none">
-                  <div className={`
+                <div className={`
                     p-2 rounded-xl transition-all duration-300 shadow-sm
-                    ${selectedVibe === VibeType.Custom ? 'bg-white/90 dark:bg-gray-800/90 scale-110 rotate-3' : 'bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600'}
-                  `} style={customVibe && selectedVibe === VibeType.Custom && customVibe.color.startsWith('#') ? { color: customVibe.color } : {}}>
-                    {customVibe && customVibe.iconName ? ICON_MAP[customVibe.iconName] : <Palette size={18} />}
-                  </div>
-                   
-                   {/* Selection Checkmark */}
-                  <div className={`
+                    ${isSelected ? 'bg-white/90 dark:bg-gray-800/90 scale-110 rotate-3' : 'bg-gray-100 dark:bg-gray-700/50 group-hover:bg-white dark:group-hover:bg-gray-700'}
+                `}>
+                    {option.icon}
+                </div>
+                
+                <div className={`
                     w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
-                    ${selectedVibe === VibeType.Custom ? 'bg-gray-900 dark:bg-white opacity-100 scale-100' : 'bg-gray-200 dark:bg-gray-700 opacity-0 scale-50'}
-                  `} style={customVibe && selectedVibe === VibeType.Custom && customVibe.color.startsWith('#') ? { backgroundColor: customVibe.color } : {}}>
-                     <Check size={12} className="text-white dark:text-gray-900" strokeWidth={3} />
-                  </div>
+                    ${isSelected ? 'bg-current opacity-100 scale-100' : 'bg-gray-200 dark:bg-gray-700 opacity-0 scale-50'}
+                `}>
+                    <Check size={12} className="text-white dark:text-gray-900" strokeWidth={3} />
                 </div>
+                </div>
+                
+                <div className={`font-bold text-sm mb-1 relative z-10 pointer-events-none ${isSelected ? 'text-current' : 'text-gray-800 dark:text-gray-100'}`}>{option.label}</div>
+                
+                <div className={`text-[11px] relative z-10 font-medium leading-tight transition-colors pointer-events-none ${isSelected ? 'opacity-90 text-current' : 'text-gray-500 dark:text-gray-400'}`}>
+                {option.desc}
+                </div>
+            </TiltCard>
+            );
+        })}
 
-                <div className="font-bold text-sm mb-1 relative z-10 text-gray-800 dark:text-gray-100 pointer-events-none">
-                    {customVibe ? customVibe.label : "Custom Vibe"}
-                </div>
-                
-                <div className={`text-[11px] relative z-10 font-medium leading-tight transition-colors pointer-events-none ${selectedVibe === VibeType.Custom ? 'opacity-90 text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}`}>
-                   {customVibe ? customVibe.description : "Create your own style"}
-                </div>
-                
-                {selectedVibe === VibeType.Custom && (
-                     <div className="absolute bottom-4 right-4 text-[10px] text-gray-500 bg-white/50 dark:bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-sm pointer-events-none">
-                         Tap to Edit
-                     </div>
+        {/* Custom Vibe Card */}
+        <div className="relative h-full min-h-[140px] z-10">
+            <AnimatePresence>
+                {isEditingCustom && (
+                    <CustomVibeForm 
+                        onClose={() => setIsEditingCustom(false)} 
+                        onSave={handleCustomSave} 
+                        initialConfig={customVibe}
+                    />
                 )}
-             </TiltCard>
-         )}
-      </div>
+            </AnimatePresence>
+            
+            {!isEditingCustom && (
+                <TiltCard
+                    onClick={handleCustomClick}
+                    isSelected={selectedVibe === VibeType.Custom}
+                    color={customVibe ? customVibe.color : "bg-gray-50 dark:bg-gray-800/50 border-dashed border-gray-300 dark:border-gray-600"}
+                >
+                    <div className="flex items-center justify-between mb-3 relative z-10 w-full pointer-events-none">
+                    <div className={`
+                        p-2 rounded-xl transition-all duration-300 shadow-sm
+                        ${selectedVibe === VibeType.Custom ? 'bg-white/90 dark:bg-gray-800/90 scale-110 rotate-3' : 'bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600'}
+                    `} style={customVibe && selectedVibe === VibeType.Custom && customVibe.color.startsWith('#') ? { color: customVibe.color } : {}}>
+                        {customVibe && customVibe.iconName ? ICON_MAP[customVibe.iconName] : <Palette size={18} />}
+                    </div>
+                    
+                    <div className={`
+                        w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
+                        ${selectedVibe === VibeType.Custom ? 'bg-gray-900 dark:bg-white opacity-100 scale-100' : 'bg-gray-200 dark:bg-gray-700 opacity-0 scale-50'}
+                    `} style={customVibe && selectedVibe === VibeType.Custom && customVibe.color.startsWith('#') ? { backgroundColor: customVibe.color } : {}}>
+                        <Check size={12} className="text-white dark:text-gray-900" strokeWidth={3} />
+                    </div>
+                    </div>
+
+                    <div className={`font-bold text-sm mb-1 relative z-10 pointer-events-none ${
+                        selectedVibe === VibeType.Custom && customVibe && !customVibe.color.startsWith('#')
+                        ? 'text-current' 
+                        : 'text-gray-800 dark:text-gray-100'
+                    }`}>
+                        {customVibe ? customVibe.label : "Custom Vibe"}
+                    </div>
+                    
+                    <div className={`text-[11px] relative z-10 font-medium leading-tight transition-colors pointer-events-none ${
+                        selectedVibe === VibeType.Custom && customVibe && !customVibe.color.startsWith('#')
+                        ? 'opacity-90 text-current'
+                        : selectedVibe === VibeType.Custom 
+                            ? 'opacity-90 text-gray-800 dark:text-gray-200' 
+                            : 'text-gray-400 dark:text-gray-500'
+                    }`}>
+                    {customVibe ? customVibe.description : "Create your own style"}
+                    </div>
+                    
+                    {selectedVibe === VibeType.Custom && (
+                        <div className="absolute bottom-4 right-4 text-[10px] text-gray-500 bg-white/50 dark:bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-sm pointer-events-none">
+                            Tap to Edit
+                        </div>
+                    )}
+                </TiltCard>
+            )}
+        </div>
+        </div>
+
+        {/* Insight Banner */}
+        <motion.div 
+            key={selectedVibe}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl p-3 flex items-center gap-3 text-xs md:text-sm text-indigo-800 dark:text-indigo-200 mb-8"
+        >
+            <div className="bg-indigo-100 dark:bg-indigo-800 p-1.5 rounded-full shrink-0">
+                <Sparkles size={12} className="text-indigo-600 dark:text-indigo-300" />
+            </div>
+            <span className="font-medium">{currentInsight}</span>
+        </motion.div>
     </div>
   );
 };

@@ -28,6 +28,8 @@
               'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'blob': 'blob 7s infinite',
               'gradient-x': 'gradient 3s ease infinite',
+              'shimmer': 'shimmer 2s linear infinite',
+              'scan': 'scan 2s linear infinite',
             },
             keyframes: {
               blob: {
@@ -39,6 +41,15 @@
               gradient: {
                 '0%, 100%': { 'background-position': '0% 50%' },
                 '50%': { 'background-position': '100% 50%' },
+              },
+              shimmer: {
+                '0%': { transform: 'translateX(-100%)' },
+                '100%': { transform: 'translateX(100%)' }
+              },
+              scan: {
+                '0%': { top: '0%' },
+                '50%': { top: '100%' },
+                '100%': { top: '0%' }
               }
             }
           },
@@ -53,40 +64,64 @@
         transition: background-color 0.5s ease, color 0.5s ease;
       }
       .dark body {
-        background-color: #111827;
+        background-color: #0f172a; /* Darker slate */
         color: #f3f4f6;
       }
+      
+      /* Glassmorphism Polish */
       .glass-panel {
         background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: blur(40px);
-        -webkit-backdrop-filter: blur(40px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
         box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-        transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
       }
       
       .dark .glass-panel {
-        background: rgba(30, 41, 59, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        background: rgba(17, 24, 39, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+      }
+      
+      /* Selection Color */
+      ::selection {
+        background: rgba(255, 107, 107, 0.2);
+        color: #FF6B6B;
+      }
+      .dark ::selection {
+        background: rgba(255, 107, 107, 0.3);
+        color: #FFD1DC;
       }
       
       /* Custom Scrollbar */
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
       }
-      .custom-scrollbar::-webkit-scrollbar-track {
+      ::-webkit-scrollbar-track {
         background: transparent;
       }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(0, 0, 0, 0.1);
+      ::-webkit-scrollbar-thumb {
+        background: rgba(156, 163, 175, 0.3);
         border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
       }
-      .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(156, 163, 175, 0.5);
+        border: 2px solid transparent;
+        background-clip: content-box;
       }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(0, 0, 0, 0.2);
+      .dark ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border: 2px solid transparent;
+        background-clip: content-box;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.25);
+        border: 2px solid transparent;
+        background-clip: content-box;
       }
       
       /* Hide scrollbar for clean UI in some containers */
@@ -103,6 +138,15 @@
         transition-property: background-color, border-color, color, fill, stroke;
         transition-duration: 300ms;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      /* Utility for typing effect cursor */
+      .typing-cursor::after {
+        content: '|';
+        animation: cursor-blink 1s step-start infinite;
+      }
+      @keyframes cursor-blink {
+        50% { opacity: 0; }
       }
     </style>
   <script type="importmap">
