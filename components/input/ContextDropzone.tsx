@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { UploadCloud, FileImage, X, Film, PlayCircle, Maximize2, PauseCircle, Volume2, VolumeX, Minimize2, RotateCcw, Type, Trash2, ClipboardPaste, AlertCircle, GripVertical, Play, Mic, Music } from 'lucide-react';
+import { UploadCloud, X, Film, Mic, Music, GripVertical, Image as ImageIcon, Type, ClipboardPaste, Trash2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { FileWithId } from '../../types';
+import { MediaPreviewModal } from '../ui/MediaPreviewModal';
 
 interface ContextDropzoneProps {
   files: FileWithId[];
@@ -10,7 +11,7 @@ interface ContextDropzoneProps {
   onReorder: (files: FileWithId[]) => void;
   textContext: string;
   setTextContext: (text: string) => void;
-  isAnalyzing?: boolean; // New prop for visual effect
+  isAnalyzing?: boolean;
 }
 
 // 3D Tilt Card Component for File Previews
@@ -62,64 +63,16 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
   const [activeTab, setActiveTab] = useState<'upload' | 'text'>('upload');
   const [pasteError, setPasteError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Video Player State for Modal
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showControls, setShowControls] = useState(true);
-  const [isEnded, setIsEnded] = useState(false);
   
   // Hover Preview State
   const [hoveringFileId, setHoveringFileId] = useState<string | null>(null);
 
-  // Stable URL state to prevent re-renders from resetting video source
-  const [activeFileUrl, setActiveFileUrl] = useState<string | null>(null);
-
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
   }, [textContext, activeTab]);
-
-  // Close modal on escape key
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closePreview();
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, []);
-
-  // Manage Active File URL Stability
-  useEffect(() => {
-    if (previewFile) {
-        const url = URL.createObjectURL(previewFile);
-        setActiveFileUrl(url);
-        // Reset player state when file changes
-        setIsPlaying(true); 
-        setProgress(0);
-        setIsEnded(false);
-        // Cleanup function to avoid memory leaks
-        return () => URL.revokeObjectURL(url);
-    } else {
-        setActiveFileUrl(null);
-        setIsPlaying(false);
-    }
-  }, [previewFile]);
-
-  const closePreview = () => {
-    setPreviewFile(null);
-    setIsPlaying(false);
-    setIsEnded(false);
-    setProgress(0);
-  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -158,115 +111,12 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
     }
   };
 
-  // Helper for list items (creates ephemeral URLs)
   const getThumbnailUrl = (file: File) => URL.createObjectURL(file);
-
-  // Video Controls Logic
-  const togglePlay = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (videoRef.current) {
-      if (isEnded) {
-        videoRef.current.currentTime = 0;
-        setIsEnded(false);
-      }
-      
-      if (videoRef.current.paused) {
-        videoRef.current.play().catch(e => console.error("Play failed:", e));
-        setIsPlaying(true);
-      } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      }
-    }
-  };
-  
-  const handleVideoPlay = () => setIsPlaying(true);
-  const handleVideoPause = () => setIsPlaying(false);
-
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-        const d = videoRef.current.duration;
-        if (Number.isFinite(d)) {
-            setDuration(d);
-        }
-    }
-  }
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      const current = videoRef.current.currentTime;
-      const total = videoRef.current.duration;
-      if (Number.isFinite(total) && total > 0) {
-        setProgress((current / total) * 100);
-        setDuration(total);
-      }
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation(); // Stop click from toggling play/pause on container
-    const val = parseFloat(e.target.value);
-    
-    // Guard against NaN or infinite duration
-    if (videoRef.current && Number.isFinite(duration) && duration > 0) {
-      const seekTo = (val / 100) * duration;
-      
-      if (Number.isFinite(seekTo)) {
-        videoRef.current.currentTime = seekTo;
-        setProgress(val);
-        setIsEnded(false); // Reset ended state on seek
-      }
-    }
-  };
-
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume;
-      setIsMuted(newVolume === 0);
-    }
-  };
-
-  const toggleFullscreen = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (videoRef.current) {
-      if (!document.fullscreenElement) {
-        videoRef.current.requestFullscreen().catch(err => console.error(err));
-        setIsFullscreen(true);
-      } else {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    }
-  };
-
-  const handleVideoEnded = () => {
-    setIsPlaying(false);
-    setIsEnded(true);
-    setShowControls(true);
-  };
-
-  const formatTime = (seconds: number) => {
-    if (!Number.isFinite(seconds)) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
 
   // Character Count Progress
   const maxChars = 1000;
   const charPercentage = (textContext.length / maxChars) * 100;
-  const strokeDasharray = 2 * Math.PI * 9; // radius 9
+  const strokeDasharray = 2 * Math.PI * 9;
   const strokeDashoffset = strokeDasharray * ((100 - charPercentage) / 100);
   const charColor = charPercentage > 90 ? '#ef4444' : charPercentage > 75 ? '#f59e0b' : '#10b981';
 
@@ -316,7 +166,7 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              style={{ minHeight: '250px' }} // Adjusted for mobile
+              style={{ minHeight: '250px' }}
             >
               {/* Scanning Laser Effect when analyzing */}
               {isAnalyzing && (
@@ -374,7 +224,7 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                      values={files} 
                      onReorder={onReorder} 
                      className="flex flex-wrap gap-3 md:gap-4 items-center justify-center w-full"
-                     onClick={(e: React.MouseEvent) => e.stopPropagation()} // Prevent triggering file upload when clicking valid area
+                     onClick={(e: React.MouseEvent) => e.stopPropagation()} 
                   >
                      <AnimatePresence>
                         {files.map((fileObj) => {
@@ -566,180 +416,12 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
         </div>
       </div>
 
-      {/* Media Preview Modal */}
       <AnimatePresence>
         {previewFile && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/95 backdrop-blur-xl p-4 md:p-8"
-            onClick={closePreview}
-          >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="relative max-w-5xl w-full flex flex-col items-center justify-center outline-none"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button 
-                onClick={closePreview}
-                className="absolute -top-14 right-0 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all backdrop-blur-sm group border border-white/10 hover:border-white/30"
-              >
-                <X size={20} className="group-hover:rotate-90 transition-transform" />
-              </button>
-              
-              <div 
-                className="rounded-3xl overflow-hidden shadow-2xl bg-black border border-white/10 w-full max-h-[80vh] flex items-center justify-center relative group/player"
-                onMouseEnter={() => setShowControls(true)}
-                onMouseLeave={() => isPlaying && setShowControls(false)}
-                onClick={togglePlay} // Click container to toggle play
-              >
-                {previewFile.type.startsWith('video/') || previewFile.type.startsWith('audio/') ? (
-                  <div className="relative w-full h-full flex items-center justify-center bg-black cursor-pointer">
-                     {/* For audio, we display a visualization placeholder instead of the video frame */}
-                     {previewFile.type.startsWith('audio/') && (
-                         <div className="w-full h-64 md:h-96 flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black">
-                             <div className="relative">
-                                 <div className={`absolute inset-0 bg-purple-500 rounded-full blur-2xl opacity-20 ${isPlaying ? 'animate-pulse' : ''}`}></div>
-                                 <Mic size={64} className="text-purple-400 relative z-10" />
-                             </div>
-                             <div className="mt-6 flex gap-1 items-end h-8">
-                                 {/* Simple fake visualizer */}
-                                 {[...Array(12)].map((_, i) => (
-                                     <div 
-                                        key={i} 
-                                        className={`w-1.5 bg-purple-500/50 rounded-full transition-all duration-300 ${isPlaying ? 'animate-pulse' : ''}`}
-                                        style={{ 
-                                            height: isPlaying ? `${Math.random() * 24 + 8}px` : '4px',
-                                            animationDelay: `${i * 0.1}s` 
-                                        }}
-                                     ></div>
-                                 ))}
-                             </div>
-                         </div>
-                     )}
-
-                     {/* Use video tag for both audio and video to leverage same API, audio will just play sound */}
-                     <video 
-                        key={previewFile.name} // Force re-render on file change to ensure playback
-                        ref={videoRef}
-                        src={activeFileUrl || ''} 
-                        className={`w-full object-contain ${previewFile.type.startsWith('audio/') ? 'hidden' : 'max-h-[80vh]'}`}
-                        onClick={togglePlay}
-                        onPlay={handleVideoPlay}
-                        onPause={handleVideoPause}
-                        onLoadedMetadata={handleLoadedMetadata}
-                        onTimeUpdate={handleTimeUpdate}
-                        onEnded={handleVideoEnded}
-                        playsInline
-                        autoPlay
-                      />
-                      
-                      {/* Custom Controls Overlay */}
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: showControls || !isPlaying ? 1 : 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-24 pb-6 px-6"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                         {/* Seek Bar */}
-                         <div className="relative w-full h-1.5 bg-white/20 rounded-full mb-5 cursor-pointer group/seek transition-all hover:h-2">
-                           <div className="absolute top-0 left-0 h-full bg-heartbeat-red rounded-full" style={{ width: `${progress}%` }}></div>
-                           <input 
-                              type="range" 
-                              min="0" 
-                              max="100" 
-                              value={progress} 
-                              onChange={handleSeek}
-                              className="absolute top-[-6px] left-0 w-full h-5 opacity-0 cursor-pointer"
-                           />
-                           <div 
-                              className="absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-white rounded-full shadow-lg opacity-0 group-hover/seek:opacity-100 transition-opacity pointer-events-none ring-2 ring-heartbeat-red"
-                              style={{ left: `${progress}%`, transform: 'translate(-50%, -50%)' }}
-                           ></div>
-                         </div>
-
-                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-6">
-                              <button onClick={togglePlay} className="text-white hover:text-heartbeat-red transition-colors transform active:scale-95">
-                                {isEnded ? <RotateCcw size={28} /> : isPlaying ? <PauseCircle size={28} /> : <Play size={28} className="ml-1" />}
-                              </button>
-                              
-                              <div className="flex items-center gap-3 group/vol">
-                                <button onClick={toggleMute} className="text-white hover:text-gray-300">
-                                  {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                                </button>
-                                <div className="w-0 overflow-hidden group-hover/vol:w-24 transition-all duration-300">
-                                   <input 
-                                      type="range" 
-                                      min="0" 
-                                      max="1" 
-                                      step="0.1" 
-                                      value={volume} 
-                                      onChange={handleVolumeChange}
-                                      className="w-24 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
-                                   />
-                                </div>
-                              </div>
-
-                              <span className="text-xs text-white/80 font-mono tracking-wider tabular-nums bg-black/40 px-2 py-1 rounded">
-                                {formatTime(videoRef.current?.currentTime || 0)} / {formatTime(duration)}
-                              </span>
-                            </div>
-
-                            <button onClick={toggleFullscreen} className="text-white hover:text-gray-300 active:scale-95 transition-transform">
-                               {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-                            </button>
-                         </div>
-                      </motion.div>
-
-                      {/* Big Center Button */}
-                      {(!isPlaying && !isEnded) && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="w-20 h-20 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-2xl animate-pulse-slow">
-                             <PlayCircle size={40} className="text-white fill-white/20 ml-1" />
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Replay Overlay */}
-                      {isEnded && (
-                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 pointer-events-none">
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-2xl">
-                                    <RotateCcw size={32} className="text-white" />
-                                </div>
-                                <span className="text-white font-medium tracking-wide">Replay</span>
-                            </div>
-                         </div>
-                      )}
-                  </div>
-                ) : (
-                  <img 
-                    src={activeFileUrl || ''} 
-                    alt="Full preview" 
-                    className="max-h-[80vh] w-full object-contain" 
-                  />
-                )}
-              </div>
-              
-              <div className="mt-6 flex items-center gap-3 text-white/90 bg-white/10 px-6 py-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg">
-                 {previewFile.type.startsWith('video/') ? (
-                     <Film size={16} className="text-heartbeat-red" /> 
-                 ) : previewFile.type.startsWith('audio/') ? (
-                     <Mic size={16} className="text-purple-400" />
-                 ) : (
-                     <FileImage size={16} className="text-blue-400" />
-                 )}
-                 <span className="font-medium tracking-wide text-sm">{previewFile.name}</span>
-                 <span className="text-white/20">|</span>
-                 <span className="text-xs text-white/60 font-mono">{(previewFile.size / 1024 / 1024).toFixed(2)} MB</span>
-              </div>
-            </motion.div>
-          </motion.div>
+          <MediaPreviewModal 
+            file={previewFile} 
+            onClose={() => setPreviewFile(null)} 
+          />
         )}
       </AnimatePresence>
     </>

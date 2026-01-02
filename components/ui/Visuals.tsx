@@ -1,42 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useSpring, useMotionValue, useTransform, useScroll } from 'framer-motion';
+import { motion, useSpring, useMotionValue, useTransform, useScroll, AnimatePresence } from 'framer-motion';
+import { Heart, Sparkles, Fingerprint, Zap } from 'lucide-react';
 
 // --- VISUALS ---
 
-// 1. Noise Texture Overlay
+// 1. Noise Texture Overlay (Subtler)
 export const NoiseOverlay = () => (
-  <div className="fixed inset-0 z-[9999] pointer-events-none opacity-[0.03] dark:opacity-[0.04] mix-blend-overlay" 
-       style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
+  <div className="fixed inset-0 z-[9999] pointer-events-none opacity-[0.025] dark:opacity-[0.04] mix-blend-overlay" 
+       style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
   </div>
 );
 
-// 2. Custom Magnetic Cursor
-export const CustomCursor = () => {
-  const cursorX = useMotionValue(-100);
-  const cursorY = useMotionValue(-100);
-  const springConfig = { damping: 25, stiffness: 700 };
-  const cursorXSpring = useSpring(cursorX, springConfig);
-  const cursorYSpring = useSpring(cursorY, springConfig);
-
-  useEffect(() => {
-    const moveCursor = (e: MouseEvent) => {
-      cursorX.set(e.clientX - 16);
-      cursorY.set(e.clientY - 16);
-    };
-    window.addEventListener('mousemove', moveCursor);
-    return () => window.removeEventListener('mousemove', moveCursor);
-  }, []);
-
-  return (
-    <motion.div
-      className="fixed left-0 top-0 w-8 h-8 rounded-full border-2 border-indigo-500/50 pointer-events-none z-[10000] hidden md:block mix-blend-difference"
-      style={{ x: cursorXSpring, y: cursorYSpring }}
-    />
-  );
-};
-
-// 3. Spotlight Card Wrapper
-export const SpotlightCard = ({ children, className = "", spotlightColor = "rgba(255,255,255,0.25)" }: any) => {
+// 3. Spotlight Card Wrapper (Improved Liquid Feel)
+export const SpotlightCard = ({ children, className = "", spotlightColor = "rgba(255,255,255,0.15)" }: any) => {
   const divRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [opacity, setOpacity] = useState(0);
@@ -56,10 +32,10 @@ export const SpotlightCard = ({ children, className = "", spotlightColor = "rgba
       className={`relative overflow-hidden ${className}`}
     >
       <div
-        className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 z-10"
+        className="pointer-events-none absolute -inset-px opacity-0 transition duration-500 z-10"
         style={{
           opacity,
-          background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${spotlightColor}, transparent 40%)`,
+          background: `radial-gradient(800px circle at ${position.x}px ${position.y}px, ${spotlightColor}, transparent 40%)`,
         }}
       />
       {children}
@@ -67,29 +43,29 @@ export const SpotlightCard = ({ children, className = "", spotlightColor = "rgba
   );
 };
 
-// 4. Shimmer Skeleton Loader
+// 4. Shimmer Skeleton Loader (Liquid)
 export const SkeletonCard = () => (
-  <div className="bg-white/40 dark:bg-gray-800/40 rounded-[2rem] p-8 h-64 w-full relative overflow-hidden border border-white/20">
-    <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent"></div>
-    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
-    <div className="space-y-3">
-      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
-      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
+  <div className="glass-panel rounded-[2rem] p-8 h-64 w-full relative overflow-hidden border border-white/20 dark:border-white/5">
+    <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/30 dark:via-white/5 to-transparent skew-x-12"></div>
+    <div className="h-4 bg-gray-200/50 dark:bg-gray-700/50 rounded-full w-1/4 mb-6 backdrop-blur-sm"></div>
+    <div className="space-y-4">
+      <div className="h-3 bg-gray-200/50 dark:bg-gray-700/50 rounded-full w-full backdrop-blur-sm"></div>
+      <div className="h-3 bg-gray-200/50 dark:bg-gray-700/50 rounded-full w-5/6 backdrop-blur-sm"></div>
+      <div className="h-3 bg-gray-200/50 dark:bg-gray-700/50 rounded-full w-4/6 backdrop-blur-sm"></div>
     </div>
-    <div className="mt-8 flex gap-2">
-       <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-       <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+    <div className="mt-8 flex gap-3">
+       <div className="h-10 w-28 bg-gray-200/50 dark:bg-gray-700/50 rounded-xl backdrop-blur-sm"></div>
+       <div className="h-10 w-10 bg-gray-200/50 dark:bg-gray-700/50 rounded-full backdrop-blur-sm"></div>
     </div>
   </div>
 );
 
-// 5. Scroll Progress Bar
+// 5. Scroll Progress Bar (Gradient)
 export const ScrollProgress = () => {
   const { scrollYProgress } = useScroll();
   return (
     <motion.div
-      className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 origin-left z-[100]"
+      className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 origin-left z-[100] shadow-[0_0_10px_rgba(168,85,247,0.5)]"
       style={{ scaleX: scrollYProgress }}
     />
   );
@@ -150,7 +126,7 @@ export const MagneticWrapper = ({ children, className = "" }: { children?: React
         const { height, width, left, top } = ref.current!.getBoundingClientRect();
         const middleX = clientX - (left + width / 2);
         const middleY = clientY - (top + height / 2);
-        setPosition({ x: middleX * 0.2, y: middleY * 0.2 });
+        setPosition({ x: middleX * 0.15, y: middleY * 0.15 });
     };
 
     const reset = () => {
@@ -194,8 +170,8 @@ export const TextReveal = ({ text, className = "" }: { text: string, className?:
 
 // 9. Holographic Overlay (Premium Card Effect)
 export const HolographicOverlay = () => (
-    <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-40 transition-opacity duration-700 z-0 mix-blend-soft-light overflow-hidden rounded-[2rem]">
-        <div className="absolute inset-[-100%] bg-gradient-to-br from-transparent via-white/40 to-transparent rotate-45 animate-[shimmer_3s_infinite]" />
+    <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700 z-0 overflow-hidden rounded-[inherit] mix-blend-soft-light">
+        <div className="absolute inset-[-50%] bg-[conic-gradient(from_0deg,transparent_0_340deg,white_360deg)] animate-[spin_4s_linear_infinite] opacity-30 mix-blend-overlay blur-3xl" />
         <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 via-purple-500/10 to-pink-500/10" />
     </div>
 );
@@ -224,42 +200,97 @@ export const MiniAudioVisualizer = ({ isPlaying }: { isPlaying: boolean }) => {
     )
 }
 
-// 11. Sonic Branding (Sound Effects)
-export const playSound = (type: 'hover' | 'click' | 'success') => {
+// 11. Sonic Branding (Web Audio API Sound Effects)
+const audioCtxCache: { ctx: AudioContext | null } = { ctx: null };
+
+export const playSound = (type: 'hover' | 'click' | 'success' | 'on' | 'glass-tap' | 'whoosh') => {
     if (typeof window === 'undefined') return;
     
-    // Create audio context only when user interacts
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
     
-    const ctx = new AudioContext();
+    if (!audioCtxCache.ctx) {
+        audioCtxCache.ctx = new AudioContext();
+    }
+    const ctx = audioCtxCache.ctx;
+    if (ctx.state === 'suspended') ctx.resume();
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
     osc.connect(gain);
     gain.connect(ctx.destination);
     
+    const now = ctx.currentTime;
+
     if (type === 'hover') {
-        osc.frequency.setValueAtTime(400, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.05);
-        gain.gain.setValueAtTime(0.02, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        // Subtle air swipe
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(450, now + 0.05);
+        gain.gain.setValueAtTime(0.005, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.05);
         osc.start();
-        osc.stop(ctx.currentTime + 0.05);
+        osc.stop(now + 0.05);
     } else if (type === 'click') {
-        osc.frequency.setValueAtTime(600, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+        // Soft bubble pop
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+        gain.gain.setValueAtTime(0.03, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
         osc.start();
-        osc.stop(ctx.currentTime + 0.1);
+        osc.stop(now + 0.1);
+    } else if (type === 'glass-tap') {
+        // High frequency glass ping
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(2000, now);
+        osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+        gain.gain.setValueAtTime(0.02, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.start();
+        osc.stop(now + 0.15);
+    } else if (type === 'whoosh') {
+        // Low frequency transition
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.linearRampToValueAtTime(200, now + 0.2);
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.2);
+        osc.start();
+        osc.stop(now + 0.2);
     } else if (type === 'success') {
-        osc.frequency.setValueAtTime(440, ctx.currentTime);
-        osc.frequency.setValueAtTime(554, ctx.currentTime + 0.1); // Major third
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+        // Melodic success chime
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now); // A4
+        osc.frequency.setValueAtTime(554.37, now + 0.1); // C#5
+        gain.gain.setValueAtTime(0.03, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.4);
         osc.start();
-        osc.stop(ctx.currentTime + 0.3);
+        osc.stop(now + 0.4);
+        
+        // Second harmony note
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(659.25, now + 0.05); // E5
+        gain2.gain.setValueAtTime(0.02, now + 0.05);
+        gain2.gain.linearRampToValueAtTime(0, now + 0.45);
+        osc2.start(now + 0.05);
+        osc2.stop(now + 0.45);
+
+    } else if (type === 'on') {
+        // Startup sound
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(440, now + 1);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.05, now + 0.5);
+        gain.gain.linearRampToValueAtTime(0, now + 1.5);
+        osc.start();
+        osc.stop(now + 1.5);
     }
 };
 
@@ -351,3 +382,68 @@ export const RadarChart = ({ metrics }: { metrics: any }) => {
         </div>
     );
 };
+
+// 13. Startup Screen
+export const StartupScreen = ({ onComplete }: { onComplete: () => void }) => {
+    useEffect(() => {
+        playSound('on');
+        const timer = setTimeout(onComplete, 2500);
+        return () => clearTimeout(timer);
+    }, [onComplete]);
+
+    return (
+        <motion.div 
+            className="fixed inset-0 z-[10000] bg-black flex flex-col items-center justify-center text-white"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            transition={{ delay: 2, duration: 0.5 }}
+            onAnimationComplete={onComplete}
+        >
+            <div className="relative">
+                <motion.div 
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: [0, 1.2, 1], opacity: 1 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="w-24 h-24 bg-gradient-to-tr from-pink-500 to-indigo-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(236,72,153,0.5)]"
+                >
+                    <Heart size={48} className="text-white fill-white" />
+                </motion.div>
+                {/* Rings */}
+                {[...Array(3)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        className="absolute inset-0 rounded-full border border-white/20"
+                        initial={{ scale: 1, opacity: 0 }}
+                        animate={{ scale: 2, opacity: 0 }}
+                        transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.4 }}
+                    />
+                ))}
+            </div>
+            
+            <div className="mt-8 text-center space-y-2">
+                 <motion.h1 
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="text-3xl font-serif font-bold tracking-tight"
+                 >
+                    PerfectReply
+                 </motion.h1>
+                 <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ delay: 0.8, duration: 0.8 }}
+                    className="h-0.5 bg-gradient-to-r from-transparent via-white to-transparent mx-auto max-w-[200px]"
+                 />
+                 <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.7 }}
+                    transition={{ delay: 1 }}
+                    className="text-sm font-light tracking-widest uppercase"
+                 >
+                    Initializing Empathy Engine...
+                 </motion.p>
+            </div>
+        </motion.div>
+    )
+}

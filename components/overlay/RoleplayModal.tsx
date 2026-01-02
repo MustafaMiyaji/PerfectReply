@@ -17,15 +17,46 @@ interface Message {
 }
 
 export const RoleplayModal: React.FC<RoleplayModalProps> = ({ onClose, analysis }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: "Ready to practice? I'll act as your partner based on the analysis. Say something!" }
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+      // Try to load persisted session first
+      const savedSession = localStorage.getItem('perfectReplyRoleplaySession');
+      if (savedSession) {
+          try {
+              return JSON.parse(savedSession);
+          } catch(e) {
+              console.error("Failed to parse saved roleplay session");
+          }
+      }
+
+      // Parse extracted history into chat format
+      // 'Me' -> 'user' (Right side)
+      // 'Partner' -> 'model' (Left side)
+      const history = analysis.lastMessages?.map(m => ({
+          role: m.sender === 'Me' ? 'user' as const : 'model' as const,
+          text: m.text
+      })) || [];
+      
+      // If empty, start with default greeting
+      if (history.length === 0) {
+          return [{ role: 'model', text: "Ready to practice? I'll act as your partner based on the analysis. Say something!" }];
+      }
+      return history;
+  });
+  
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll to bottom on mount and new messages
+    setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+    
+    // Save to local storage
+    if (messages.length > 0) {
+        localStorage.setItem('perfectReplyRoleplaySession', JSON.stringify(messages));
+    }
   }, [messages, isTyping]);
 
   const handleSend = async () => {
@@ -47,6 +78,13 @@ export const RoleplayModal: React.FC<RoleplayModalProps> = ({ onClose, analysis 
     }
   };
 
+  const clearSession = () => {
+      if(window.confirm("Start a fresh roleplay session?")) {
+          setMessages([{ role: 'model', text: "Reset complete. Let's start over." }]);
+          localStorage.removeItem('perfectReplyRoleplaySession');
+      }
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -67,16 +105,30 @@ export const RoleplayModal: React.FC<RoleplayModalProps> = ({ onClose, analysis 
                     </div>
                     <div>
                         <h3 className="text-white font-bold">Practice Mode</h3>
-                        <p className="text-xs text-gray-400">Simulating partner: {analysis.partnerStyle}</p>
+                        <p className="text-xs text-gray-400">Simulating: {analysis.partnerStyle}</p>
                     </div>
                 </div>
-                <button onClick={onClose} className="p-2 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-colors">
-                    <X size={20} />
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={clearSession} className="p-2 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-colors" title="Reset Session">
+                        <RefreshCw size={18} />
+                    </button>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
             </div>
 
             {/* Chat Area */}
             <div className="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-900/50">
+                {/* Visual Separator if history exists */}
+                {analysis.lastMessages && analysis.lastMessages.length > 0 && (
+                    <div className="flex items-center gap-4 opacity-50 py-2">
+                        <div className="h-px bg-gray-600 flex-grow"></div>
+                        <span className="text-[10px] uppercase font-bold text-gray-400">Context from upload</span>
+                        <div className="h-px bg-gray-600 flex-grow"></div>
+                    </div>
+                )}
+
                 {messages.map((msg, idx) => (
                     <motion.div 
                         key={idx}
@@ -92,6 +144,7 @@ export const RoleplayModal: React.FC<RoleplayModalProps> = ({ onClose, analysis 
                         </div>
                     </motion.div>
                 ))}
+                
                 {isTyping && (
                     <div className="flex gap-4">
                         <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
@@ -104,7 +157,9 @@ export const RoleplayModal: React.FC<RoleplayModalProps> = ({ onClose, analysis 
                         </div>
                     </div>
                 )}
-                <div ref={messagesEndRef} />
+                
+                {/* Spacer to allow scrolling past bottom */}
+                <div ref={messagesEndRef} className="h-2" />
             </div>
 
             {/* Input */}

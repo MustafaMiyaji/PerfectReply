@@ -73,14 +73,17 @@ export const analyzeContext = async (files: File[], text: string, language: stri
       ...fileParts,
       { text: `
         Analyze the conversation context provided (screenshots, screen recordings, audio/call recordings, and/or text).
-        Focus on the "Partner's" communication style.
-        Ignore the "User" (me).
+        
+        CRITICAL TASK: DISTINGUISH BETWEEN "USER" AND "PARTNER".
+        - In standard messaging apps (iMessage, WhatsApp, Tinder, etc.), the "User" (Me) messages are typically on the RIGHT side (often Blue or Green).
+        - The "Partner" (Them) messages are typically on the LEFT side (often Gray or White).
+        - If analyzing audio/transcript, infer who is who based on context.
         
         Language Context: The conversation is happening in ${language || "the language detected in the files"}.
         Additional context: ${text}
         
         Identify:
-        1. Their emotional baseline and key patterns.
+        1. "Partner's" emotional baseline and key patterns.
         2. "Red Flags": Look for signs of gaslighting, manipulation, love-bombing, negging, or passive-aggressiveness. If none, leave empty.
         3. Personality Metrics (0-100 score):
            - Empathy: How caring/understanding are they?
@@ -88,13 +91,19 @@ export const analyzeContext = async (files: File[], text: string, language: stri
            - Humor: How funny/playful?
            - Vulnerability: How open/emotional?
            - Clarity: How direct/easy to understand?
+        4. Mimicry Style: Extract their specific texting habits (capitalization, punctuation, emoji frequency & specific emojis used, slang, sentence length, language quirks).
+        5. Recent History: ACCURATELY Transcribe the last 6-10 messages found in the screenshots/evidence.
+           - Label each message as 'Me' (Right side/User) or 'Partner' (Left side/Them).
+           - Maintain the exact order.
         
         Return a JSON object with:
         - summary: A direct, highly actionable piece of advice addressed to the user ("You").
         - tags: Array of short behavioral tags.
         - partnerStyle: Brief description of their vibe.
         - redFlags: Array of strings describing any toxic behavior found (e.g., "Deflects blame", "Uses guilt").
-        - personalityMetrics: Object with numeric scores (0-100) for empathy, aggression, humor, vulnerability, clarity.
+        - personalityMetrics: Object with numeric scores (0-100).
+        - mimicryPatterns: A detailed string instructing how to mimic their texting style exactly.
+        - lastMessages: Array of objects { sender: 'Me' | 'Partner', text: string }. 'Me' is the user (Right side). 'Partner' is them (Left side).
       ` }
     ];
 
@@ -120,9 +129,21 @@ export const analyzeContext = async (files: File[], text: string, language: stri
                     clarity: { type: Type.NUMBER }
                 },
                 required: ["empathy", "aggression", "humor", "vulnerability", "clarity"]
+            },
+            mimicryPatterns: { type: Type.STRING },
+            lastMessages: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        sender: { type: Type.STRING, enum: ["Me", "Partner"] },
+                        text: { type: Type.STRING }
+                    },
+                    required: ["sender", "text"]
+                }
             }
           },
-          required: ["summary", "tags", "partnerStyle", "redFlags", "personalityMetrics"]
+          required: ["summary", "tags", "partnerStyle", "redFlags", "personalityMetrics", "mimicryPatterns", "lastMessages"]
         }
       }
     });
@@ -473,17 +494,23 @@ export const simulatePartnerReply = async (
 ): Promise<string> => {
     const ai = getAiClient();
     const prompt = `
-        You are roleplaying as the user's "Partner" based on previous analysis.
-        Partner Style: ${analysis.partnerStyle}
-        Summary of habits: ${analysis.summary}
+        You are roleplaying as the user's "Partner" based on the uploaded conversation evidence.
+        
+        CRITICAL MIMICRY INSTRUCTIONS (Follow Strictly):
+        ${analysis.mimicryPatterns || "Identify and copy their texting style from context: check capitalization, punctuation, specific emojis, and sentence length."}
+        
+        Partner Vibe: ${analysis.partnerStyle}
+        Habits: ${analysis.summary}
+        
         Personality Traits:
         - Empathy: ${analysis.personalityMetrics?.empathy || 50}/100
         - Aggression: ${analysis.personalityMetrics?.aggression || 10}/100
         - Humor: ${analysis.personalityMetrics?.humor || 50}/100
         
-        INSTRUCTIONS:
-        - Reply to the user's latest message as the Partner would.
-        - Match their length, tone, and emoji usage strictly.
+        TASK:
+        - Reply to the user's latest message as the Partner.
+        - STRICTLY match their length and tone. If they write short, you write short.
+        - Use the language/slang they use.
         - Do NOT break character. Do NOT give advice. Just reply.
         
         Latest User Message: "${userMessage}"

@@ -132,6 +132,11 @@ export const ContextChat: React.FC<ContextChatProps> = ({ files, textContext, la
       }
   };
 
+  // Initial Load on Mount
+  useEffect(() => {
+      loadHistory();
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };

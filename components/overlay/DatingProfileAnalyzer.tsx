@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UploadCloud, Sparkles, MessageCircle, Heart, Search, ArrowRight, Loader2, Copy, CheckCircle2, MessageSquare, Send, Play, Square } from 'lucide-react';
+import { X, UploadCloud, Sparkles, MessageCircle, Heart, Search, ArrowRight, Loader2, Copy, CheckCircle2, MessageSquare, Send, Play, Square, ImageIcon, Trash2, Film, Mic } from 'lucide-react';
 import { FileWithId, IcebreakerSuggestion, GeneratedReply } from '../../types';
 import { generateIcebreakers, generateReplies, generateSpeech, pcmToAudioBuffer } from '../../services/geminiService';
-import { MiniAudioVisualizer } from '../ui/Visuals';
+import { MiniAudioVisualizer, playSound } from '../ui/Visuals';
+import { MediaPreviewModal } from '../ui/MediaPreviewModal';
 
 interface DatingProfileAnalyzerProps {
   onClose: () => void;
@@ -17,6 +18,7 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
   const [suggestions, setSuggestions] = useState<IcebreakerSuggestion[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
   
   // Chat Extension State
   const [theyReplied, setTheyReplied] = useState('');
@@ -39,21 +41,31 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setProfileFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+      const newFiles = Array.from(e.target.files!);
+      setProfileFiles(prev => [...prev, ...newFiles]);
+      playSound('click');
     }
+  };
+
+  const removeFile = (index: number) => {
+      setProfileFiles(prev => prev.filter((_, i) => i !== index));
+      playSound('click');
   };
 
   const handleGenerate = async () => {
     if (profileFiles.length === 0 && !bioText.trim()) {
         setError("Please upload a profile screenshot or paste their bio.");
+        playSound('glass-tap'); // Error sound could be distinct, reusing tap for interaction
         return;
     }
     setError(null);
     setStep('generating');
+    playSound('whoosh');
     try {
         const results = await generateIcebreakers(profileFiles, bioText);
         setSuggestions(results);
         setStep('results');
+        playSound('success');
     } catch (err) {
         setError("Couldn't analyze the profile. Try a clearer screenshot.");
         setStep('upload');
@@ -63,6 +75,7 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
   const handleReplyGeneration = async () => {
       if (!theyReplied.trim()) return;
       setIsGeneratingReply(true);
+      playSound('click');
       
       try {
           const mockAnalysis = {
@@ -94,6 +107,7 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
           
           setChatReplies(results);
           setStep('chat');
+          playSound('success');
       } catch (e) {
           setError("Failed to generate follow-up. Please try again.");
       } finally {
@@ -104,6 +118,7 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
   const copyText = (text: string, index: number) => {
       navigator.clipboard.writeText(text);
       setCopiedIndex(index);
+      playSound('success');
       setTimeout(() => setCopiedIndex(null), 2000);
   };
 
@@ -120,6 +135,7 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
       }
 
       setIsAudioLoadingId(id);
+      playSound('click');
 
       try {
           // Initialize Audio Context
@@ -165,7 +181,13 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
       }
   };
 
+  // Helper for generating ephemeral URLs for thumbnails
+  const getThumbnailUrl = (file: File) => {
+      return URL.createObjectURL(file);
+  }
+
   return (
+    <>
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -224,15 +246,9 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
                                    <UploadCloud size={32} className="text-pink-500" />
                                </div>
                                <div className="text-center">
-                                   {profileFiles.length > 0 ? (
-                                       <div className="font-medium text-gray-900 dark:text-white">
-                                           {profileFiles.length} file(s) selected
-                                       </div>
-                                   ) : (
-                                       <div className="font-medium text-gray-900 dark:text-white">
-                                           Click to upload media
-                                       </div>
-                                   )}
+                                   <div className="font-medium text-gray-900 dark:text-white">
+                                       Click to upload media
+                                   </div>
                                    <div className="text-sm text-gray-400 mt-1">or paste bio below</div>
                                    
                                    <div className="flex gap-2 justify-center mt-3 opacity-60 flex-wrap">
@@ -245,6 +261,53 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
                                </div>
                            </div>
                        </div>
+
+                       {/* Media Preview Grid */}
+                       {profileFiles.length > 0 && (
+                           <div className="w-full mt-6 grid grid-cols-3 sm:grid-cols-4 gap-3">
+                               {profileFiles.map((file, idx) => {
+                                   const isVideo = file.type.startsWith('video/');
+                                   const isAudio = file.type.startsWith('audio/');
+                                   const isImage = file.type.startsWith('image/');
+                                   
+                                   return (
+                                   <motion.div 
+                                      key={idx} 
+                                      layoutId={`file-${idx}`}
+                                      className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 group cursor-pointer hover:shadow-lg transition-shadow"
+                                      onClick={() => { setPreviewFile(file); playSound('click'); }}
+                                   >
+                                       {isImage ? (
+                                           <img src={getThumbnailUrl(file)} alt="preview" className="w-full h-full object-cover" />
+                                       ) : isVideo ? (
+                                           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900 text-gray-400 relative">
+                                               <video src={getThumbnailUrl(file)} className="w-full h-full object-cover opacity-60" />
+                                               <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                   <Film size={24} className="text-white drop-shadow-md" />
+                                               </div>
+                                               <span className="absolute bottom-1 right-2 text-[9px] text-white/80 font-bold bg-black/50 px-1.5 rounded">VIDEO</span>
+                                           </div>
+                                       ) : isAudio ? (
+                                           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-400">
+                                               <Mic size={28} />
+                                               <span className="text-[9px] mt-2 font-bold uppercase tracking-wide">Audio</span>
+                                           </div>
+                                       ) : (
+                                           <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 p-2">
+                                               <ImageIcon size={24} />
+                                           </div>
+                                       )}
+                                       
+                                       <button 
+                                           onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                                           className="absolute top-1 right-1 bg-black/50 hover:bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all transform scale-90 hover:scale-100 z-10"
+                                       >
+                                           <Trash2 size={12} />
+                                       </button>
+                                   </motion.div>
+                               )})}
+                           </div>
+                       )}
 
                        {/* Bio Input */}
                        <div className="w-full mt-6">
@@ -362,7 +425,7 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
                            )})}
                        </div>
                        
-                       {/* Chat Extension - Added mb-12 to ensure it doesn't hug bottom too tight before padding kicks in */}
+                       {/* Chat Extension */}
                        <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border-2 border-gray-100 dark:border-gray-700 shadow-xl mt-auto mb-4">
                            <h3 className="font-serif font-bold text-lg mb-4 text-gray-900 dark:text-white flex items-center gap-2">
                                <MessageSquare className="text-pink-500" /> Did they reply?
@@ -456,6 +519,16 @@ export const DatingProfileAnalyzer: React.FC<DatingProfileAnalyzerProps> = ({ on
                )}
            </AnimatePresence>
        </div>
+       
+       <AnimatePresence>
+        {previewFile && (
+          <MediaPreviewModal 
+            file={previewFile} 
+            onClose={() => setPreviewFile(null)} 
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
+    </>
   );
 };

@@ -95,9 +95,9 @@ const TiltCard = ({ children, isSelected, onClick, color, ...props }: any) => {
             className={`
               relative rounded-2xl p-4 text-left transition-all duration-300 overflow-visible group outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-gray-700 h-full flex flex-col justify-between min-h-[140px] w-full
               ${isSelected && !isCustomHex
-                ? `${color} ring-2 ring-offset-2 ring-transparent shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] z-10` 
+                ? `${color} ring-2 ring-offset-2 ring-transparent shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] z-10 scale-[1.02]` 
                 : !isSelected 
-                    ? 'bg-white/50 dark:bg-gray-800/50 border border-transparent hover:bg-white/80 dark:hover:bg-gray-800 hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-black/20' 
+                    ? 'bg-white/60 dark:bg-gray-800/50 border border-white/50 dark:border-transparent hover:bg-white/90 dark:hover:bg-gray-800 hover:shadow-xl hover:shadow-indigo-500/5 dark:hover:shadow-black/20 hover:-translate-y-1' 
                     : 'z-10'
               }
             `}
@@ -107,7 +107,7 @@ const TiltCard = ({ children, isSelected, onClick, color, ...props }: any) => {
             </div>
             
             {isSelected && !isCustomHex && (
-              <div className={`absolute inset-0 blur-2xl opacity-40 -z-10 rounded-2xl ${color.split(' ')[0].replace('bg-', 'bg-')}`} style={{ transform: "translateZ(-10px)" }}></div>
+              <div className={`absolute inset-0 blur-2xl opacity-30 -z-10 rounded-2xl ${color.split(' ')[0].replace('bg-', 'bg-')}`} style={{ transform: "translateZ(-10px)" }}></div>
             )}
         </motion.button>
     );
@@ -186,14 +186,14 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 backdrop-blur-md p-4"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4"
             onClick={onClose}
         >
             <motion.div 
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-2xl w-full max-w-md p-6 md:p-8 relative overflow-hidden border border-white/20 dark:border-white/10 max-h-[90vh] overflow-y-auto"
+                className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-2xl w-full max-w-md p-6 md:p-8 relative overflow-hidden border border-white/60 dark:border-white/10 max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <button 
@@ -335,7 +335,7 @@ const CustomVibeForm = ({ onClose, onSave, initialConfig }: { onClose: () => voi
                     <button 
                         disabled={!label || !description}
                         onClick={handleSave}
-                        className="flex-grow bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-4 rounded-xl text-sm font-bold uppercase tracking-wide hover:bg-black dark:hover:bg-gray-100 disabled:opacity-50 transition-all shadow-xl hover:shadow-2xl active:scale-[0.98] disabled:active:scale-100"
+                        className="flex-grow bg-slate-900 dark:bg-white text-white dark:text-gray-900 py-4 rounded-xl text-sm font-bold uppercase tracking-wide hover:bg-black dark:hover:bg-gray-100 disabled:opacity-50 transition-all shadow-xl hover:shadow-2xl active:scale-[0.98] disabled:active:scale-100"
                     >
                         Apply Vibe
                     </button>
@@ -386,7 +386,7 @@ export const VibeSelector: React.FC<VibeSelectorProps> = ({ selectedVibe, onSele
                 <div className="flex items-center justify-between mb-3 relative z-10 w-full pointer-events-none">
                 <div className={`
                     p-2 rounded-xl transition-all duration-300 shadow-sm
-                    ${isSelected ? 'bg-white/90 dark:bg-gray-800/90 scale-110 rotate-3' : 'bg-gray-100 dark:bg-gray-700/50 group-hover:bg-white dark:group-hover:bg-gray-700'}
+                    ${isSelected ? 'bg-white/90 dark:bg-gray-800/90 scale-110 rotate-3' : 'bg-white/80 dark:bg-gray-700/50 group-hover:bg-white dark:group-hover:bg-gray-700'}
                 `}>
                     {option.icon}
                 </div>
@@ -399,9 +399,9 @@ export const VibeSelector: React.FC<VibeSelectorProps> = ({ selectedVibe, onSele
                 </div>
                 </div>
                 
-                <div className={`font-bold text-sm mb-1 relative z-10 pointer-events-none ${isSelected ? 'text-current' : 'text-gray-800 dark:text-gray-100'}`}>{option.label}</div>
+                <div className={`font-bold text-sm mb-1 relative z-10 pointer-events-none ${isSelected ? 'text-current' : 'text-slate-800 dark:text-gray-100'}`}>{option.label}</div>
                 
-                <div className={`text-[11px] relative z-10 font-medium leading-tight transition-colors pointer-events-none ${isSelected ? 'opacity-90 text-current' : 'text-gray-500 dark:text-gray-400'}`}>
+                <div className={`text-[11px] relative z-10 font-medium leading-tight transition-colors pointer-events-none ${isSelected ? 'opacity-90 text-current' : 'text-slate-500 dark:text-gray-400'}`}>
                 {option.desc}
                 </div>
             </TiltCard>
@@ -424,19 +424,19 @@ export const VibeSelector: React.FC<VibeSelectorProps> = ({ selectedVibe, onSele
                 <TiltCard
                     onClick={handleCustomClick}
                     isSelected={selectedVibe === VibeType.Custom}
-                    color={customVibe ? customVibe.color : "bg-gray-50 dark:bg-gray-800/50 border-dashed border-gray-300 dark:border-gray-600"}
+                    color={customVibe ? customVibe.color : "bg-gray-50/50 dark:bg-gray-800/50 border-dashed border-gray-300 dark:border-gray-600"}
                 >
                     <div className="flex items-center justify-between mb-3 relative z-10 w-full pointer-events-none">
                     <div className={`
                         p-2 rounded-xl transition-all duration-300 shadow-sm
-                        ${selectedVibe === VibeType.Custom ? 'bg-white/90 dark:bg-gray-800/90 scale-110 rotate-3' : 'bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600'}
+                        ${selectedVibe === VibeType.Custom ? 'bg-white/90 dark:bg-gray-800/90 scale-110 rotate-3' : 'bg-white/80 dark:bg-gray-700 border border-white/50 dark:border-gray-600'}
                     `} style={customVibe && selectedVibe === VibeType.Custom && customVibe.color.startsWith('#') ? { color: customVibe.color } : {}}>
                         {customVibe && customVibe.iconName ? ICON_MAP[customVibe.iconName] : <Palette size={18} />}
                     </div>
                     
                     <div className={`
                         w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
-                        ${selectedVibe === VibeType.Custom ? 'bg-gray-900 dark:bg-white opacity-100 scale-100' : 'bg-gray-200 dark:bg-gray-700 opacity-0 scale-50'}
+                        ${selectedVibe === VibeType.Custom ? 'bg-slate-900 dark:bg-white opacity-100 scale-100' : 'bg-gray-200 dark:bg-gray-700 opacity-0 scale-50'}
                     `} style={customVibe && selectedVibe === VibeType.Custom && customVibe.color.startsWith('#') ? { backgroundColor: customVibe.color } : {}}>
                         <Check size={12} className="text-white dark:text-gray-900" strokeWidth={3} />
                     </div>
@@ -445,7 +445,7 @@ export const VibeSelector: React.FC<VibeSelectorProps> = ({ selectedVibe, onSele
                     <div className={`font-bold text-sm mb-1 relative z-10 pointer-events-none ${
                         selectedVibe === VibeType.Custom && customVibe && !customVibe.color.startsWith('#')
                         ? 'text-current' 
-                        : 'text-gray-800 dark:text-gray-100'
+                        : 'text-slate-800 dark:text-gray-100'
                     }`}>
                         {customVibe ? customVibe.label : "Custom Vibe"}
                     </div>
@@ -454,8 +454,8 @@ export const VibeSelector: React.FC<VibeSelectorProps> = ({ selectedVibe, onSele
                         selectedVibe === VibeType.Custom && customVibe && !customVibe.color.startsWith('#')
                         ? 'opacity-90 text-current'
                         : selectedVibe === VibeType.Custom 
-                            ? 'opacity-90 text-gray-800 dark:text-gray-200' 
-                            : 'text-gray-400 dark:text-gray-500'
+                            ? 'opacity-90 text-slate-800 dark:text-gray-200' 
+                            : 'text-slate-400 dark:text-gray-500'
                     }`}>
                     {customVibe ? customVibe.description : "Create your own style"}
                     </div>
@@ -475,7 +475,7 @@ export const VibeSelector: React.FC<VibeSelectorProps> = ({ selectedVibe, onSele
             key={selectedVibe}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl p-3 flex items-center gap-3 text-xs md:text-sm text-indigo-800 dark:text-indigo-200 mb-8"
+            className="bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100/60 dark:border-indigo-800/50 rounded-xl p-3 flex items-center gap-3 text-xs md:text-sm text-indigo-800 dark:text-indigo-200 mb-8"
         >
             <div className="bg-indigo-100 dark:bg-indigo-800 p-1.5 rounded-full shrink-0">
                 <Sparkles size={12} className="text-indigo-600 dark:text-indigo-300" />

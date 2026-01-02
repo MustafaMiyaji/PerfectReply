@@ -29,12 +29,19 @@ export interface PersonalityMetrics {
   clarity: number;
 }
 
+export interface ChatMessage {
+  sender: 'Me' | 'Partner';
+  text: string;
+}
+
 export interface ChatAnalysis {
   summary: string;
   tags: string[];
   partnerStyle: string;
   redFlags: string[]; // List of potential manipulation/concern signs
   personalityMetrics: PersonalityMetrics; // For Radar Chart
+  mimicryPatterns?: string; // Specific instructions on how to mimic the partner's texting style
+  lastMessages?: ChatMessage[]; // Extracted history for roleplay context
 }
 
 export interface GeneratedReply {

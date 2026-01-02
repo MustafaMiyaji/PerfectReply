@@ -6,37 +6,37 @@ import {
   Shield, 
   Zap, 
   Thermometer, 
-  ArrowRight,
-  RefreshCw,
-  CheckCircle2,
-  Smile,
-  HeartHandshake,
-  Flame,
-  Scale,
-  AlertCircle,
-  RotateCcw,
-  Github,
-  Linkedin,
-  X,
-  Save,
-  Clock,
-  ChevronDown,
-  Bell,
-  Lightbulb,
-  Image as ImageIcon,
-  Download,
-  Moon,
-  Sun,
-  Globe,
-  Ghost,
-  MessageSquare,
-  Send,
-  CornerDownRight,
-  Paperclip,
-  Mic,
-  Film,
-  File as FileIcon,
-  Bot
+  ArrowRight, 
+  RefreshCw, 
+  CheckCircle2, 
+  Smile, 
+  HeartHandshake, 
+  Flame, 
+  Scale, 
+  AlertCircle, 
+  RotateCcw, 
+  Github, 
+  Linkedin, 
+  X, 
+  Save, 
+  Clock, 
+  ChevronDown, 
+  Bell, 
+  Lightbulb, 
+  Image as ImageIcon, 
+  Download, 
+  Moon, 
+  Sun, 
+  Globe, 
+  Ghost, 
+  MessageSquare, 
+  Send, 
+  CornerDownRight, 
+  Paperclip, 
+  Mic, 
+  Film, 
+  File as FileIcon, 
+  Bot 
 } from 'lucide-react';
 import { AmbientBackground } from './components/layout/AmbientBackground';
 import { ContextDropzone } from './components/input/ContextDropzone';
@@ -47,7 +47,8 @@ import { DatingProfileAnalyzer } from './components/overlay/DatingProfileAnalyze
 import { RoleplayModal } from './components/overlay/RoleplayModal';
 import { analyzeContext, generateReplies, generateReactionImage } from './services/geminiService';
 import { VibeType, ChatAnalysis, GeneratedReply, FileWithId, CustomVibeConfig } from './types';
-import { CustomCursor, NoiseOverlay, ScrollProgress, SkeletonCard, Meteors, MagneticWrapper, TextReveal, RadarChart, playSound } from './components/ui/Visuals';
+import { NoiseOverlay, ScrollProgress, SkeletonCard, Meteors, MagneticWrapper, TextReveal, RadarChart, playSound, StartupScreen, HolographicOverlay } from './components/ui/Visuals';
+import { MediaPreviewModal } from './components/ui/MediaPreviewModal';
 
 // Legal Content Constants (Condensed for brevity, content same as previous)
 const PRIVACY_POLICY = `
@@ -63,6 +64,7 @@ const TERMS_OF_SERVICE = `
 // Simple Toast Notification Component
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'info', onClose: () => void }) => {
   useEffect(() => {
+    playSound('success');
     const timer = setTimeout(onClose, 3000);
     return () => clearTimeout(timer);
   }, [onClose]);
@@ -72,7 +74,7 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
       initial={{ opacity: 0, y: 50, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.9 }}
-      className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 backdrop-blur-xl border w-[90%] md:w-auto justify-center ring-1 ${
+      className={`fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 backdrop-blur-xl border w-[90%] md:w-auto justify-center ring-1 ${
         type === 'success' 
           ? 'bg-emerald-50/90 dark:bg-emerald-900/90 border-emerald-200 dark:border-emerald-700 text-emerald-800 dark:text-emerald-100 ring-emerald-500/20' 
           : 'bg-blue-50/90 dark:bg-blue-900/90 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-100 ring-blue-500/20'
@@ -127,10 +129,11 @@ const LegalModal = ({ title, content, onClose }: { title: string, content: strin
       initial={{ scale: 0.9, opacity: 0, y: 20 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
       exit={{ scale: 0.9, opacity: 0, y: 20 }}
-      className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-white/40 dark:border-white/10 ring-1 ring-black/5"
+      className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-white/40 dark:border-white/10 ring-1 ring-black/5 relative"
       onClick={e => e.stopPropagation()}
     >
-      <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+      <HolographicOverlay />
+      <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50 relative z-10">
         <h3 className="font-serif text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
           <Shield size={20} className="text-indigo-500" />
           {title}
@@ -139,7 +142,7 @@ const LegalModal = ({ title, content, onClose }: { title: string, content: strin
           <X size={18} />
         </button>
       </div>
-      <div className="p-6 overflow-y-auto custom-scrollbar">
+      <div className="p-6 overflow-y-auto custom-scrollbar relative z-10">
         <div className="prose prose-sm prose-indigo dark:prose-invert text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">
            {content.split('\n').map((line, i) => (
              <p key={i} className={line.startsWith('**') ? 'font-bold text-gray-800 dark:text-gray-100 mt-4 mb-2' : 'mb-2'}>
@@ -148,7 +151,7 @@ const LegalModal = ({ title, content, onClose }: { title: string, content: strin
            ))}
         </div>
       </div>
-      <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-end">
+      <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-end relative z-10">
         <button onClick={onClose} className="px-6 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors w-full md:w-auto">
           Close
         </button>
@@ -168,19 +171,20 @@ const OnboardingModal = ({ onClose }: { onClose: () => void }) => (
       <motion.div 
          initial={{ scale: 0.8, opacity: 0 }}
          animate={{ scale: 1, opacity: 1 }}
-         className="bg-white dark:bg-gray-800 rounded-[2rem] p-8 max-w-md w-full shadow-2xl text-center relative overflow-hidden border border-white/20"
+         className="glass-panel rounded-[2rem] p-8 max-w-md w-full shadow-2xl text-center relative overflow-hidden border border-white/20"
       >
+          <HolographicOverlay />
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-heartbeat-red to-purple-500"></div>
-          <div className="w-16 h-16 bg-gradient-to-tr from-pink-100 to-indigo-100 dark:from-pink-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-white dark:ring-gray-700">
+          <div className="w-16 h-16 bg-gradient-to-tr from-pink-100 to-indigo-100 dark:from-pink-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-white dark:ring-gray-700 relative z-10">
              <Sparkles className="text-indigo-500 dark:text-indigo-300" size={32} />
           </div>
           
-          <h2 className="font-serif text-2xl font-bold mb-3 text-gray-900 dark:text-white">Welcome to PerfectReply</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed text-base">
+          <h2 className="font-serif text-2xl font-bold mb-3 text-gray-900 dark:text-white relative z-10">Welcome to PerfectReply</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed text-base relative z-10">
             Your personal AI relationship coach. Upload your chat history, select a vibe, and get the perfect response instantly.
           </p>
           
-          <div className="space-y-4 text-left mb-8 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+          <div className="space-y-4 text-left mb-8 bg-gray-50/50 dark:bg-gray-900/30 p-4 rounded-xl border border-gray-100 dark:border-gray-700 relative z-10">
              <div className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
                 <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">Upload Context (Audio/Images/Text)</span>
@@ -195,7 +199,7 @@ const OnboardingModal = ({ onClose }: { onClose: () => void }) => (
              </div>
           </div>
 
-          <button onClick={onClose} className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-3.5 rounded-xl font-bold hover:bg-black dark:hover:bg-gray-100 transition-transform active:scale-95 shadow-lg">
+          <button onClick={onClose} className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-3.5 rounded-xl font-bold hover:bg-black dark:hover:bg-gray-100 transition-transform active:scale-95 shadow-lg relative z-10">
              Let's Connect
           </button>
       </motion.div>
@@ -248,6 +252,8 @@ const App: React.FC = () => {
   const [focusedReplyIndex, setFocusedReplyIndex] = useState<number>(-1);
   const [showDatingAnalyzer, setShowDatingAnalyzer] = useState(false);
   const [showRoleplay, setShowRoleplay] = useState(false);
+  const [isStartupComplete, setIsStartupComplete] = useState(false);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
 
   const loadingMessages = [
     "Reading between the lines...",
@@ -298,8 +304,7 @@ const App: React.FC = () => {
     const savedDraft = localStorage.getItem('perfectReplyDraft');
     const hasVisited = localStorage.getItem('perfectReplyVisited');
     if (!hasVisited) {
-        setShowOnboarding(true);
-        localStorage.setItem('perfectReplyVisited', 'true');
+        // Show onboarding after startup animation
     }
   }, []);
 
@@ -326,6 +331,7 @@ const App: React.FC = () => {
                 setUserSelectedReply(null);
                 setContinuationFiles([]);
             }
+            if (previewFile) setPreviewFile(null);
         }
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
             if (step === 'config') {
@@ -357,7 +363,16 @@ const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [step, activeModal, showOnboarding, replies, focusedReplyIndex, showDatingAnalyzer, userSelectedReply, showRoleplay]);
+  }, [step, activeModal, showOnboarding, replies, focusedReplyIndex, showDatingAnalyzer, userSelectedReply, showRoleplay, previewFile]);
+
+  const handleStartupComplete = () => {
+      setIsStartupComplete(true);
+      const hasVisited = localStorage.getItem('perfectReplyVisited');
+      if (!hasVisited) {
+          setShowOnboarding(true);
+          localStorage.setItem('perfectReplyVisited', 'true');
+      }
+  }
 
   const showToast = (message: string, type: 'success' | 'info' = 'success') => {
     setToast({ message, type });
@@ -375,6 +390,7 @@ const App: React.FC = () => {
   };
 
   const handleFilesAdded = (newFiles: File[]) => {
+    playSound('glass-tap');
     const newFilesWithIds = newFiles.map(f => ({
         id: Math.random().toString(36).substr(2, 9),
         file: f
@@ -398,6 +414,7 @@ const App: React.FC = () => {
     playSound('click');
     setError(null);
     setStep('analyzing');
+    playSound('whoosh');
     try {
       const rawFiles = files.map(f => f.file);
       const result = await analyzeContext(rawFiles, textContext, language);
@@ -452,14 +469,11 @@ const App: React.FC = () => {
       if (!analysis || replies.length === 0) return;
       
       // Feature: Check for API Key selection if user is on restricted plan or using restricted models
-      // This specifically handles the 403 PERMISSION_DENIED on Gemini 3 Pro Image
       if (typeof window !== 'undefined' && (window as any).aistudio) {
           try {
               const hasKey = await (window as any).aistudio.hasSelectedApiKey();
               if (!hasKey) {
-                  // User needs to select a key for Pro features
                   await (window as any).aistudio.openSelectKey();
-                  // We continue execution assuming they selected one or will try again
               }
           } catch (e) {
               console.error("AI Studio key check failed", e);
@@ -473,10 +487,8 @@ const App: React.FC = () => {
           setGeneratedImage(base64);
           playSound('success');
       } catch (e: any) {
-          // Check for 403 specifically to guide user
           if (e.message && e.message.includes('403')) {
              showToast("Access Denied: Please ensure you have selected a valid project/key for Image Generation.", 'info');
-             // Try to re-trigger selection if possible
              if ((window as any).aistudio) {
                  await (window as any).aistudio.openSelectKey();
              }
@@ -580,10 +592,13 @@ const App: React.FC = () => {
 
   return (
     <div className={`relative min-h-screen w-full font-sans text-dark-slate overflow-x-hidden selection:bg-soft-blush selection:text-heartbeat-red flex flex-col transition-colors duration-500 ${isDarkMode ? 'dark' : ''}`}>
+      <AnimatePresence>
+        {!isStartupComplete && <StartupScreen onComplete={handleStartupComplete} />}
+      </AnimatePresence>
+
       <AmbientBackground />
       <NoiseOverlay />
       <Meteors />
-      <CustomCursor />
       <ScrollProgress />
       <AnimatePresence>
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -593,6 +608,7 @@ const App: React.FC = () => {
         {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
         {showDatingAnalyzer && <DatingProfileAnalyzer onClose={() => setShowDatingAnalyzer(false)} initialFiles={files} />}
         {showRoleplay && analysis && <RoleplayModal onClose={() => setShowRoleplay(false)} analysis={analysis} />}
+        {previewFile && <MediaPreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />}
       </AnimatePresence>
       
       {/* Context Chat - Floating Assistant */}
@@ -642,7 +658,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex flex-col items-center justify-center flex-grow p-4 md:p-8 pt-24 md:pt-32 pb-20 w-full max-w-7xl mx-auto">
+      <main className="relative z-10 flex flex-col items-center justify-center flex-grow p-4 md:p-8 pt-24 md:pt-32 pb-32 md:pb-24 w-full max-w-7xl mx-auto">
         <AnimatePresence mode="wait">
           {/* STEP 1: UPLOAD */}
           {step === 'upload' && (
