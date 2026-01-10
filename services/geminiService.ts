@@ -2,7 +2,7 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { ChatAnalysis, GeneratedReply, VibeType, CustomVibeConfig, IcebreakerSuggestion } from '../types';
 
 // Helper to get fresh client instance (important if API_KEY changes in runtime)
-const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+export const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Converts a File object to a Base64 string suitable for the Gemini API.
@@ -27,7 +27,7 @@ export const fileToPart = (file: File): Promise<{ inlineData: { data: string; mi
 /**
  * Helper to decode base64 to Uint8Array
  */
-function base64ToBytes(base64: string): Uint8Array {
+export function base64ToBytes(base64: string): Uint8Array {
   const binaryString = atob(base64);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
@@ -490,9 +490,12 @@ export const generateIcebreakers = async (
 export const simulatePartnerReply = async (
     history: { role: 'user' | 'model', text: string }[],
     analysis: ChatAnalysis,
-    userMessage: string
+    userMessage: string,
+    files: File[] = []
 ): Promise<string> => {
     const ai = getAiClient();
+    const fileParts = await Promise.all(files.map(fileToPart));
+
     const prompt = `
         You are roleplaying as the user's "Partner" based on the uploaded conversation evidence.
         
@@ -509,11 +512,13 @@ export const simulatePartnerReply = async (
         
         TASK:
         - Reply to the user's latest message as the Partner.
+        - REACT to any images/files sent in the context of the relationship/vibe.
         - STRICTLY match their length and tone. If they write short, you write short.
         - Use the language/slang they use.
         - Do NOT break character. Do NOT give advice. Just reply.
         
         Latest User Message: "${userMessage}"
+        ${files.length > 0 ? "[User sent attachments]" : ""}
     `;
     
     // We send only text history to keep it lightweight for the roleplay loop
@@ -527,7 +532,7 @@ export const simulatePartnerReply = async (
             model: 'gemini-3-pro-preview',
             contents: [
                 ...chatHistory,
-                { role: 'user', parts: [{ text: prompt }] }
+                { role: 'user', parts: [...fileParts, { text: prompt }] }
             ]
         });
         return response.text || "...";
