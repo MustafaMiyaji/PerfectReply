@@ -143,14 +143,14 @@ export const RoleplayModal: React.FC<RoleplayModalProps> = ({ onClose, analysis 
                     <div className="flex bg-gray-700 rounded-lg p-1 mr-2">
                         <button 
                             onClick={() => setMode('text')} 
-                            className={`p-1.5 rounded-md transition-all ${mode === 'text' ? 'bg-gray-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                            className="p-1.5 rounded-md transition-all bg-gray-600 text-white shadow-sm"
                             title="Text Chat"
                         >
                             <MessageSquare size={16} />
                         </button>
                         <button 
                             onClick={() => setMode('voice')} 
-                            className={`p-1.5 rounded-md transition-all ${mode === 'voice' ? 'bg-green-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                            className="p-1.5 rounded-md transition-all text-gray-400 hover:text-white"
                             title="Live Call"
                         >
                             <Phone size={16} />
