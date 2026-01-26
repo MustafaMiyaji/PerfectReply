@@ -113,13 +113,6 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
 
   const getThumbnailUrl = (file: File) => URL.createObjectURL(file);
 
-  // Character Count Progress
-  const maxChars = 1000;
-  const charPercentage = (textContext.length / maxChars) * 100;
-  const strokeDasharray = 2 * Math.PI * 9;
-  const strokeDashoffset = strokeDasharray * ((100 - charPercentage) / 100);
-  const charColor = charPercentage > 90 ? '#ef4444' : charPercentage > 75 ? '#f59e0b' : '#10b981';
-
   return (
     <>
       <div className="flex flex-col gap-6">
@@ -382,7 +375,6 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                   className="w-full bg-transparent border-none p-4 md:p-6 resize-none min-h-[220px] md:min-h-[250px] placeholder:text-gray-400 dark:placeholder:text-gray-600 text-sm md:text-base focus:ring-0 focus:outline-none custom-scrollbar leading-relaxed overflow-hidden text-gray-800 dark:text-gray-200"
                   value={textContext}
                   onChange={(e) => setTextContext(e.target.value)}
-                  maxLength={maxChars}
                 />
                 
                 {/* Footer Status Bar */}
@@ -391,25 +383,10 @@ export const ContextDropzone: React.FC<ContextDropzoneProps> = ({
                       {textContext.length === 0 ? "Ready for input" : "Typing..."}
                    </div>
                    
-                   {/* Circular Progress Indicator */}
                    <div className="flex items-center gap-3">
-                       <span className={`text-xs font-mono font-medium ${charPercentage > 90 ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
-                           {textContext.length}/{maxChars}
+                       <span className="text-xs font-mono font-medium text-gray-400 dark:text-gray-500">
+                           {textContext.length} chars
                        </span>
-                       <div className="relative w-6 h-6">
-                           <svg className="transform -rotate-90 w-full h-full">
-                               <circle cx="12" cy="12" r="9" stroke={charPercentage === 0 ? "#e5e7eb" : "#4b5563"} strokeOpacity={0.3} strokeWidth="2" fill="none" />
-                               <circle 
-                                   cx="12" cy="12" r="9" 
-                                   stroke={charColor} 
-                                   strokeWidth="2" 
-                                   fill="none" 
-                                   strokeDasharray={strokeDasharray} 
-                                   strokeDashoffset={strokeDashoffset}
-                                   className="transition-all duration-300"
-                               />
-                           </svg>
-                       </div>
                    </div>
                 </div>
              </div>
